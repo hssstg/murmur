@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    typeless_scaffold_lib::run()
+    typeless_lib::run()
 }

@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "typeless-scaffold",
+  "productName": "typeless",
   "version": "0.1.0",
-  "identifier": "com.locke.typeless-scaffold",
+  "identifier": "com.locke.typeless",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "typeless-scaffold",
+        "title": "typeless",
         "width": 800,
         "height": 600
       }
