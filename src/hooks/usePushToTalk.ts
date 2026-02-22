@@ -13,11 +13,25 @@ export function usePushToTalk() {
   const recorderRef = useRef<AudioRecorder | null>(null);
   const clientRef = useRef<VolcengineClient | null>(null);
   const resultRef = useRef<ASRResult | null>(null);
+  // Guard: ignore ptt:start if a session is already active
+  const isSessionActive = useRef(false);
+
+  function cleanupSession() {
+    recorderRef.current?.stop();
+    recorderRef.current = null;
+    clientRef.current?.disconnect();
+    clientRef.current = null;
+    isSessionActive.current = false;
+  }
 
   useEffect(() => {
     const cleanup: Array<() => void> = [];
 
     listen<void>('ptt:start', async () => {
+      // Fix 3: Ignore if already recording
+      if (isSessionActive.current) return;
+      isSessionActive.current = true;
+
       setStatus('connecting');
       setResult(null);
       setError(null);
@@ -33,9 +47,11 @@ export function usePushToTalk() {
           resultRef.current = r;
         });
 
+        // Fix 4: Cleanup everything on error
         client.on('error', (err: Error) => {
           setError(err.message);
           setStatus('error');
+          cleanupSession();
         });
 
         await client.connect();
@@ -49,22 +65,26 @@ export function usePushToTalk() {
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
         setStatus('error');
+        cleanupSession();
       }
     }).then((unlisten) => cleanup.push(unlisten));
 
     listen<void>('ptt:stop', async () => {
+      if (!isSessionActive.current) return;
+
       setStatus('processing');
 
       recorderRef.current?.stop();
       recorderRef.current = null;
 
       const client = clientRef.current;
-      client?.finishAudio();
-
       if (!client) {
+        isSessionActive.current = false;
         setStatus('idle');
         return;
       }
+
+      client.finishAudio();
 
       // Wait for final result (max 10s)
       const finalResult = await new Promise<ASRResult | null>((resolve) => {
@@ -85,7 +105,10 @@ export function usePushToTalk() {
         });
       });
 
+      // Fix 2: Disconnect client before clearing ref
+      client.disconnect();
       clientRef.current = null;
+      isSessionActive.current = false;
 
       if (finalResult?.text) {
         try {
@@ -104,6 +127,7 @@ export function usePushToTalk() {
 
     return () => {
       cleanup.forEach((fn) => fn());
+      cleanupSession();
     };
   }, []);
 

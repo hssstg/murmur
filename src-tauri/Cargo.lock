@@ -4467,6 +4467,7 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-opener",
  "tauri-plugin-websocket",
+ "tokio",
 ]
 
 [[package]]
