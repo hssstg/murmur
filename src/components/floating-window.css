@@ -1,0 +1,246 @@
+/**
+ * Floating Window Styles
+ * Styles for the ASR floating window and its components.
+ *
+ * Design specs:
+ * - Width: 320px fixed
+ * - Height: 58px min, 112px max (4 lines)
+ * - Background: rgba(28, 28, 30, 0.92) + blur(20px)
+ * - Border: 1px rgba(255, 255, 255, 0.08)
+ * - Border radius: 10px
+ *
+ * Layout structure (vertical):
+ * ┌─────────────────────────────────────┐ ─┬─ paddingTop: 10px
+ * │  ● Listening...                     │  │  statusBarHeight: 11px (font-size)
+ * │─────────────────────────────────────│  │  statusBarPaddingBottom: 6px
+ * │                                     │  │  statusBarBorder: 1px
+ * │                                     │  │  gap: 6px
+ * ├─────────────────────────────────────┤ ─┼─ chromeHeight: 40px (fixed)
+ * │  Transcribed text content           │  │
+ * │  Second line...                     │  │  contentHeight: 18-72px (dynamic)
+ * │  Third line...                      │  │
+ * │  Fourth line...                     │  │
+ * ├─────────────────────────────────────┤ ─┴─
+ * │                                     │     paddingBottom: 6px
+ * └─────────────────────────────────────┘
+ *      Total height = chromeHeight + contentHeight
+ *                   = 40px + (18px × lines)
+ *                   = 58px ~ 112px
+ */
+
+/* ============================================
+ * Reset and Base Styles
+ * ============================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  /* Transparent background for the floating window */
+  background: transparent;
+  overflow: hidden;
+}
+
+/* ============================================
+ * Floating Window Container
+ * ============================================ */
+
+.floating-window {
+  /* Visual appearance - macOS dark style */
+  background: rgba(28, 28, 30, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+
+  /* Layout - match design spec */
+  width: 320px;
+  min-height: 58px;
+  max-height: 112px;
+  /* paddingTop: 10px, paddingBottom: 6px, left: 12px, right: 16px (extra for vibrancy edge) */
+  padding: 10px 16px 6px 12px;
+  /* Use clip instead of hidden to prevent content clipping at edges */
+  overflow: clip;
+
+  /* Make the whole window draggable */
+  -webkit-app-region: drag;
+
+  /* Typography */
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica,
+    Arial, sans-serif;
+
+  /* Prevent text selection during drag */
+  user-select: none;
+}
+
+.floating-window__content {
+  display: flex;
+  flex-direction: column;
+  /* gap between status bar and transcript area */
+  gap: 6px;
+  height: 100%;
+  /* Allow status indicator animation to be visible */
+  overflow: visible;
+}
+
+/* ============================================
+ * Status Indicator (Status Bar)
+ * ============================================ */
+
+.status-indicator {
+  display: flex;
+  /* Vertically center dot and label */
+  align-items: center;
+  gap: 8px;
+  /* Status bar min-height to accommodate dot animation (6px * 1.2 scale = ~8px) */
+  min-height: 16px;
+  /* Bottom padding before border */
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+  /* Ensure animated dot glow/scale doesn't get clipped */
+  overflow: visible;
+}
+
+.status-indicator__dot {
+  /* Dot size: 6px for better alignment with 11px font */
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease;
+}
+
+.status-indicator__label {
+  color: rgba(255, 255, 255, 0.6);
+  /* Status bar font size: 11px */
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+/* Idle state - gray dot */
+.status-indicator--idle .status-indicator__dot {
+  background: #48484a;
+}
+
+/* Connecting state - red dot (connecting to ASR) */
+.status-indicator--connecting .status-indicator__dot {
+  background: #ff453a;
+}
+
+/* Listening state - red dot with breathing animation + glow */
+.status-indicator--listening .status-indicator__dot {
+  background: #ff453a;
+  box-shadow: 0 0 6px rgba(255, 69, 58, 0.6);
+  animation: breathe 1.5s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 6px rgba(255, 69, 58, 0.6);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.2);
+    box-shadow: 0 0 10px rgba(255, 69, 58, 0.8);
+  }
+}
+
+/* Processing state - red dot, no animation */
+.status-indicator--processing .status-indicator__dot {
+  background: #ff453a;
+}
+
+/* Pasting state - gray dot */
+.status-indicator--pasting .status-indicator__dot {
+  background: #48484a;
+}
+
+/* Done state - gray dot */
+.status-indicator--done .status-indicator__dot {
+  background: #48484a;
+}
+
+/* Error state - gray dot */
+.status-indicator--error .status-indicator__dot {
+  background: #48484a;
+}
+
+/* ============================================
+ * Transcript Display
+ * ============================================ */
+
+.transcript-text {
+  /* Font: 14px with line-height 1.25 = 18px per line */
+  font-size: 14px;
+  line-height: 1.25;
+  /* Max height: 4 lines × 18px = 72px */
+  max-height: 72px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Hide scrollbar but keep functionality */
+.transcript-text::-webkit-scrollbar {
+  width: 0;
+  display: none;
+}
+
+/* Firefox scrollbar hiding */
+.transcript-text {
+  scrollbar-width: none;
+}
+
+/* Interim (not final) text - gray italic */
+.transcript-text--interim {
+  color: #636366;
+  font-style: italic;
+}
+
+/* Final text - white */
+.transcript-text--final {
+  color: #ffffff;
+  font-style: normal;
+}
+
+/* ============================================
+ * Error Display
+ * ============================================ */
+
+.error-display {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: #ff453a;
+}
+
+.error-display__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ff453a;
+  color: #fff;
+  font-size: 11px;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.error-display__message {
+  font-size: 13px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.8);
+}
