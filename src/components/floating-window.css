@@ -60,7 +60,6 @@ body {
   /* Layout - match design spec */
   width: 320px;
   min-height: 58px;
-  max-height: 112px;
   /* paddingTop: 10px, paddingBottom: 6px, left: 12px, right: 16px (extra for vibrancy edge) */
   padding: 10px 16px 6px 12px;
   /* Use clip instead of hidden to prevent content clipping at edges */
@@ -243,4 +242,30 @@ body {
   font-size: 13px;
   line-height: 1.4;
   color: rgba(255, 255, 255, 0.8);
+}
+
+/* ============================================
+ * Waveform Visualizer
+ * ============================================ */
+
+.waveform {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 40px;
+  padding: 0 2px 4px;
+  opacity: 1;
+  transition: opacity 200ms ease;
+  flex-shrink: 0;
+}
+
+.waveform--fading {
+  opacity: 0;
+}
+
+.waveform__bar {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 2px 2px 0 0;
+  transition: height 80ms ease;
 }
