@@ -2,12 +2,12 @@ import { useEffect } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { usePushToTalk } from '../hooks/usePushToTalk';
 import { StatusIndicator } from './StatusIndicator';
-import { TranscriptDisplay } from './TranscriptDisplay';
+import { WaveformVisualizer } from './WaveformVisualizer';
 import { ErrorDisplay } from './ErrorDisplay';
 import './floating-window.css';
 
 export function FloatingWindow() {
-  const { status, result, error } = usePushToTalk();
+  const { status, error, audioLevels } = usePushToTalk();
 
   useEffect(() => {
     const win = getCurrentWindow();
@@ -18,16 +18,16 @@ export function FloatingWindow() {
     }
   }, [status]);
 
-  const hasTranscript =
-    Boolean(result?.text) &&
-    (status === 'listening' || status === 'processing' || status === 'done');
+  const showWaveform =
+    status === 'connecting' || status === 'listening' || status === 'processing';
+  const waveformFading = status === 'processing';
 
   return (
     <div className="floating-window">
       <div className="floating-window__content">
         <StatusIndicator status={status} />
-        {hasTranscript && result && (
-          <TranscriptDisplay text={result.text} interim={!result.isFinal} />
+        {showWaveform && (
+          <WaveformVisualizer levels={audioLevels} fading={waveformFading} />
         )}
         {error && <ErrorDisplay message={error} />}
       </div>
