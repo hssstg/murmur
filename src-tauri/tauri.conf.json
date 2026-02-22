@@ -12,13 +12,24 @@
   "app": {
     "windows": [
       {
-        "title": "typeless",
-        "width": 800,
-        "height": 600
+        "label": "main",
+        "title": "Typeless",
+        "width": 360,
+        "height": 130,
+        "minWidth": 360,
+        "minHeight": 58,
+        "resizable": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "visible": false,
+        "focus": false,
+        "center": true
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; connect-src wss://openspeech.bytedance.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
     }
   },
   "bundle": {
