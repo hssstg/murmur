@@ -7,19 +7,13 @@ use tauri::{AppHandle, Emitter, LogicalPosition, Manager};
 
 fn hotkey_to_key(s: &str) -> Key {
     match s {
-        "RAlt"     => Key::AltGr,          // Right Alt  (macOS: Right Option, kVK_RightOption = 61)
-        "LAlt"     => Key::Alt,            // Left Alt   (macOS: Left Option,  kVK_Option = 58)
-        "RControl" => Key::Unknown(62),    // Right Control (kVK_RightControl = 62, rdev workaround)
-        "LControl" => Key::ControlLeft,    // Left Control  (kVK_Control = 59)
-        "RShift"   => Key::ShiftRight,     // Right Shift   (kVK_RightShift = 60)
-        "CapsLock" => Key::CapsLock,       // Caps Lock     (kVK_CapsLock = 57)
-        // Legacy values from old configs
-        "LOption"  => Key::Alt,
-        "ROption"  => Key::AltGr,
-        "F13"      => Key::Unknown(105),
-        "F14"      => Key::Unknown(107),
-        "F15"      => Key::Unknown(113),
-        _          => Key::AltGr,
+        "LOption"  => Key::Alt,            // kVK_Option = 58
+        "RControl" => Key::Unknown(62),    // kVK_RightControl = 62 (not named in rdev)
+        "LControl" => Key::ControlLeft,    // kVK_Control = 59
+        "F13"      => Key::Unknown(105),   // kVK_F13 = 0x69
+        "F14"      => Key::Unknown(107),   // kVK_F14 = 0x6B
+        "F15"      => Key::Unknown(113),   // kVK_F15 = 0x71
+        _          => Key::AltGr,          // default: ROption = kVK_RightOption = 61
     }
 }
 

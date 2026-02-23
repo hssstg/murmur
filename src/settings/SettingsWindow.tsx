@@ -19,7 +19,7 @@ const DEFAULT_CONFIG: Config = {
   api_app_id: '',
   api_access_token: '',
   api_resource_id: 'volc.bigasr.sauc.duration',
-  hotkey: 'RAlt',
+  hotkey: 'ROption',
   microphone: null,
   asr_language: 'zh-CN',
   asr_enable_punc: true,
@@ -29,12 +29,13 @@ const DEFAULT_CONFIG: Config = {
 };
 
 const HOTKEY_OPTIONS: { label: string; value: string }[] = [
-  { label: 'Right Alt', value: 'RAlt' },
-  { label: 'Left Alt', value: 'LAlt' },
+  { label: 'Right Option', value: 'ROption' },
+  { label: 'Left Option', value: 'LOption' },
   { label: 'Right Control', value: 'RControl' },
   { label: 'Left Control', value: 'LControl' },
-  { label: 'Right Shift', value: 'RShift' },
-  { label: 'Caps Lock', value: 'CapsLock' },
+  { label: 'F13', value: 'F13' },
+  { label: 'F14', value: 'F14' },
+  { label: 'F15', value: 'F15' },
 ];
 
 const LANGUAGE_OPTIONS: { label: string; value: string }[] = [
@@ -84,16 +85,7 @@ export default function SettingsWindow() {
 
   useEffect(() => {
     invoke<Config>('get_config')
-      .then((cfg) => {
-        // Migrate legacy macOS-specific hotkey values to cross-platform names
-        const legacyHotkeys: Record<string, string> = {
-          ROption: 'RAlt', LOption: 'LAlt', F13: 'RAlt', F14: 'RAlt', F15: 'RAlt',
-        };
-        if (legacyHotkeys[cfg.hotkey]) {
-          cfg = { ...cfg, hotkey: legacyHotkeys[cfg.hotkey] };
-        }
-        setConfig(cfg);
-      })
+      .then(setConfig)
       .catch(() => {
         // Keep defaults if config load fails
       });
