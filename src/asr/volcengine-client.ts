@@ -12,6 +12,7 @@ import TauriWebSocket from '@tauri-apps/plugin-websocket';
 import type { ASRResult, ASRStatus } from './types';
 import type { VolcengineClientConfig, ConnectionState } from './types';
 import { VOLCENGINE_CONSTANTS } from './constants';
+import { flog } from '../utils/log';
 
 // ============ Helper: concatenate Uint8Arrays ============
 
@@ -148,7 +149,9 @@ function parseResponse(data: Uint8Array): ParsedResponse | null {
 
   if (messageType === PROTOCOL.MSG_SERVER_ERROR) {
     // Error response: header(4) + code(4) + msgSize(4) + message
+    if (data.length < 12) return null;
     const msgSize = bytesToInt(data, 8);
+    if (data.length < 12 + msgSize) return null;
     const rawMsg = data.slice(12, 12 + msgSize);
     let message: string;
     if (compression === PROTOCOL.COMPRESS_GZIP) {
@@ -156,12 +159,14 @@ function parseResponse(data: Uint8Array): ParsedResponse | null {
     } else {
       message = new TextDecoder().decode(rawMsg);
     }
-    console.error('[volcengine-client] Server error', { message });
+    const errorCode = bytesToInt(data, 4);
+    console.error(`[volcengine-client] Server error code=${errorCode}: ${message}`);
     return { type: 'error', sequence: 0, error: message };
   }
 
   if (messageType === PROTOCOL.MSG_SERVER_ACK) {
     // ACK response: header(4) + sequence(4)
+    if (data.length < 8) return null;
     const sequence = bytesToInt(data, 4);
     console.log('[volcengine-client] Server ACK', { sequence });
     return { type: 'ack', sequence };
@@ -169,8 +174,10 @@ function parseResponse(data: Uint8Array): ParsedResponse | null {
 
   if (messageType === PROTOCOL.MSG_FULL_SERVER_RESPONSE) {
     // Full response: header(4) + sequence(4) + payloadSize(4) + payload
+    if (data.length < 12) return null;
     const sequence = bytesToInt(data, 4);
     const payloadSize = bytesToInt(data, 8);
+    if (payloadSize < 0 || data.length < 12 + payloadSize) return null;
     const rawPayload = data.slice(12, 12 + payloadSize);
     const payloadBytes =
       compression === PROTOCOL.COMPRESS_GZIP
@@ -273,9 +280,12 @@ export class VolcengineClient extends EventEmitter<VolcengineClientEvents> {
 
     let ws: TauriWebSocket;
     try {
+      flog(`connect() calling TauriWebSocket.connect reqId=${this.requestId.slice(0,8)}`);
       ws = await TauriWebSocket.connect(VOLCENGINE_CONSTANTS.ENDPOINT, { headers });
+      flog(`connect() TauriWebSocket connected reqId=${this.requestId.slice(0,8)}`);
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
+      flog(`connect() TauriWebSocket.connect FAILED: ${err.message}`);
       console.error('[volcengine-client] Failed to connect WebSocket', { error: err.message });
       this.updateState('error');
       this.emitStatus('error');
@@ -285,7 +295,10 @@ export class VolcengineClient extends EventEmitter<VolcengineClientEvents> {
 
     this.ws = ws;
     this.wsOpen = true;
-    this.updateState('connected');
+    // Keep state as 'connecting' until after init + flush so that any
+    // audio:chunk events that fire during the await below are still buffered.
+    // Setting 'connected' here was causing live audio to race with the flush
+    // and creating sequence number gaps (autoAssignedSequence mismatch).
 
     // Register message listener
     this.unlistenWs = ws.addListener((message) => {
@@ -321,9 +334,11 @@ export class VolcengineClient extends EventEmitter<VolcengineClientEvents> {
       },
       request: {
         model_name: 'bigmodel',
-        enable_punc: false,
-        enable_itn: true,
-        enable_ddc: true,
+        language: this.config.language,
+        enable_punc: this.config.enablePunc,
+        enable_itn: this.config.enableItn,
+        enable_ddc: this.config.enableDdc,
+        ...(this.config.vocabulary ? { vocabulary_id: this.config.vocabulary } : {}),
         show_utterances: true,
         result_type: 'full',
       },
@@ -332,7 +347,7 @@ export class VolcengineClient extends EventEmitter<VolcengineClientEvents> {
     console.log('[volcengine-client] Sending init request', initRequest);
     const payload = buildInitRequest(initRequest, this.sequence);
     this.sequence = 2; // Next sequence for audio
-
+    flog(`connect() sending init seq=1 pendingAudio=${this.pendingAudioChunks.length}`);
     await this.ws.send({ type: 'Binary', data: Array.from(payload) });
 
     // Flush any audio chunks that arrived during the connection handshake
@@ -346,13 +361,19 @@ export class VolcengineClient extends EventEmitter<VolcengineClientEvents> {
       this.pendingAudioChunks = [];
     }
 
+    // All buffered audio is flushed — now mark as connected so live audio
+    // flows directly instead of being buffered.
+    this.updateState('connected');
+    flog(`connect() state=connected seq=${this.sequence} pendingFinish=${this.pendingFinish}`);
+
     // If finishAudio() was called while we were still connecting, send the
     // finish signal now (after the audio flush, so ordering is correct).
     if (this.pendingFinish) {
       this.pendingFinish = false;
-      console.log('[volcengine-client] Sending deferred finish signal', { sequence: this.sequence });
+      const finishSeq = this.sequence;
+      console.log('[volcengine-client] Sending deferred finish signal', { sequence: finishSeq });
       this.emitStatus('processing');
-      const finishPayload = buildAudioRequest(new Uint8Array(0), this.sequence, true);
+      const finishPayload = buildAudioRequest(new Uint8Array(0), finishSeq, true);
       this.ws.send({ type: 'Binary', data: Array.from(finishPayload) }).catch((err: unknown) => {
         console.error('[volcengine-client] Failed to send deferred finish signal', { err });
       });
@@ -409,11 +430,15 @@ export class VolcengineClient extends EventEmitter<VolcengineClientEvents> {
       return;
     }
 
-    console.log('[volcengine-client] Sending finish signal', { sequence: this.sequence });
+    // this.sequence holds the NEXT sequence number to use, which is what the
+    // server expects in the finish packet (negated). Do NOT use sequence - 1.
+    const finishSeq = this.sequence;
+    console.log('[volcengine-client] Sending finish signal', { sequence: finishSeq });
+    flog(`finishAudio() seq=${finishSeq}`);
     this.emitStatus('processing');
 
     // Send final packet with empty audio and negative sequence
-    const payload = buildAudioRequest(new Uint8Array(0), this.sequence, true);
+    const payload = buildAudioRequest(new Uint8Array(0), finishSeq, true);
     if (this.ws) {
       this.ws.send({ type: 'Binary', data: Array.from(payload) }).catch((err: unknown) => {
         console.error('[volcengine-client] Failed to send finish signal', { err });
@@ -454,10 +479,12 @@ export class VolcengineClient extends EventEmitter<VolcengineClientEvents> {
   }
 
   private handleMessage(data: Uint8Array): void {
-    const response = parseResponse(data);
-    if (!response) return;
+    try {
+      const response = parseResponse(data);
+      if (!response) return;
 
     if (response.type === 'error' && response.error) {
+      flog(`handleMessage ERROR: ${response.error}`);
       this.emit('error', new Error(response.error));
       this.emitStatus('error');
     } else if (response.type === 'result' && response.text !== undefined) {
@@ -471,6 +498,7 @@ export class VolcengineClient extends EventEmitter<VolcengineClientEvents> {
         type: result.type,
         textLength: result.text.length,
       });
+      flog(`handleMessage RESULT isFinal=${result.isFinal} text="${result.text}"`);
 
       this.emit('result', result);
 
@@ -479,6 +507,9 @@ export class VolcengineClient extends EventEmitter<VolcengineClientEvents> {
       }
     }
     // ACK messages are logged only, no event emitted
+    } catch (e) {
+      console.error('[volcengine-client] handleMessage unexpected error', { error: e });
+    }
   }
 }
 
@@ -495,5 +526,5 @@ export function loadConfig(): VolcengineClientConfig {
       'Missing VITE_VOLCENGINE_APP_ID or VITE_VOLCENGINE_ACCESS_TOKEN in .env'
     );
   }
-  return { appId, accessToken, resourceId };
+  return { appId, accessToken, resourceId, language: '', enablePunc: false, enableItn: true, enableDdc: true };
 }

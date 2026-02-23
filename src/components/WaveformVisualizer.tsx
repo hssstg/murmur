@@ -1,6 +1,6 @@
 interface WaveformVisualizerProps {
-  levels: number[];   // 16 values, each 0–1
-  fading: boolean;    // true during processing state → triggers CSS fade-out
+  levels: number[];  // 16 values, each 0–1
+  fading: boolean;   // true during processing state → triggers CSS fade-out
 }
 
 export function WaveformVisualizer({ levels, fading }: WaveformVisualizerProps) {
@@ -10,7 +10,7 @@ export function WaveformVisualizer({ levels, fading }: WaveformVisualizerProps) 
         <div
           key={i}
           className="waveform__bar"
-          style={{ height: `${Math.max(3, level * 40)}px` }}
+          style={{ height: `${Math.max(3, level * 28)}px` }}
         />
       ))}
     </div>
