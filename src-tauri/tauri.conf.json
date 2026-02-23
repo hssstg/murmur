@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "typeless",
+  "productName": "Murmur",
   "version": "0.1.0",
-  "identifier": "com.locke.typeless",
+  "identifier": "com.locke.murmur",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -10,10 +10,11 @@
     "frontendDist": "../dist"
   },
   "app": {
+    "macOSPrivateApi": true,
     "windows": [
       {
         "label": "main",
-        "title": "Typeless",
+        "title": "Murmur",
         "width": 360,
         "height": 130,
         "minWidth": 360,
@@ -41,6 +42,9 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "macOS": {
+      "entitlements": "./entitlements.plist"
+    }
   }
 }

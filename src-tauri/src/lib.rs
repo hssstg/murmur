@@ -27,6 +27,7 @@ pub fn run() {
         .manage(Arc::clone(&cfg))
         .invoke_handler(tauri::generate_handler![
             text::insert_text,
+            text::append_log,
             config::get_config,
             config::save_config,
             list_audio_devices,
@@ -52,19 +53,20 @@ pub fn run() {
                         if let Some(w) = app.get_webview_window("settings") {
                             let _ = w.show();
                             let _ = w.set_focus();
-                        } else {
-                            tauri::WebviewWindowBuilder::new(
-                                app,
-                                "settings",
-                                tauri::WebviewUrl::App("index.html".into()),
-                            )
-                            .title("Murmur Settings")
-                            .inner_size(520.0, 480.0)
-                            .resizable(false)
-                            .always_on_top(false)
-                            .transparent(false)
-                            .build()
-                            .ok();
+                        } else if let Ok(w) = tauri::WebviewWindowBuilder::new(
+                            app,
+                            "settings",
+                            tauri::WebviewUrl::App("index.html".into()),
+                        )
+                        .title("Murmur Settings")
+                        .inner_size(520.0, 480.0)
+                        .resizable(false)
+                        .always_on_top(false)
+                        .transparent(false)
+                        .build()
+                        {
+                            let _ = w.show();
+                            let _ = w.set_focus();
                         }
                     }
                     "devtools" => {

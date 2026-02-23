@@ -2,7 +2,7 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Capability for the main window",
-  "windows": ["main"],
+  "windows": ["main", "settings"],
   "permissions": [
     "core:default",
     "opener:default",
@@ -10,6 +10,10 @@
     "core:window:allow-hide",
     "core:window:allow-set-focus",
     "core:window:allow-set-always-on-top",
-    "websocket:allow-connect"
+    "core:window:allow-create",
+    "core:path:default",
+    "websocket:allow-connect",
+    "websocket:allow-send",
+    "core:tray:default"
   ]
 }
