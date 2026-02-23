@@ -498,7 +498,7 @@ export class VolcengineClient extends EventEmitter<VolcengineClientEvents> {
         type: result.type,
         textLength: result.text.length,
       });
-      flog(`handleMessage RESULT isFinal=${result.isFinal} text="${result.text}"`);
+      flog(`handleMessage RESULT isFinal=${result.isFinal} textLen=${result.text.length}`);
 
       this.emit('result', result);
 

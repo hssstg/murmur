@@ -166,7 +166,7 @@ export function usePushToTalk() {
 
         client.on('result', (r: ASRResult) => {
           if (r.isFinal) {
-            flog(`ptt:stop got isFinal result: "${r.text}"`);
+            flog(`ptt:stop got isFinal result: len=${r.text.length}`);
             clearTimeout(timeout);
             resolve(r);
           }
@@ -185,7 +185,7 @@ export function usePushToTalk() {
       // Do NOT re-assign them here — a new ptt:start may have already set them for the next session.
 
       if (finalResult?.text) {
-        flog(`ptt:stop insert_text: "${finalResult.text}"`);
+        flog(`ptt:stop insert_text: len=${finalResult.text.length}`);
         try {
           await invoke('insert_text', { text: finalResult.text });
         } catch (err) {
@@ -204,7 +204,7 @@ export function usePushToTalk() {
           }
         }, 800);
       }
-      flog(`ptt:stop done finalText="${finalResult?.text ?? ''}" peakRms=${peakRmsRef.current.toFixed(4)}`);
+      flog(`ptt:stop done finalText.len=${finalResult?.text?.length ?? 0} peakRms=${peakRmsRef.current.toFixed(4)}`);
     }).then((unlisten) => cleanup.push(unlisten));
 
     return () => {
