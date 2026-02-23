@@ -63,7 +63,10 @@ pub fn start(app: AppHandle, audio: Arc<Mutex<AudioCapture>>, config: SharedConf
                 }
             }
 
-            std::thread::sleep(Duration::from_millis(20));
+            // Adaptive sleep: shorter when held (responsive release detection),
+            // longer when idle (reduces CPU wakeups by ~60%).
+            let sleep_ms = if is_held.load(Ordering::SeqCst) { 10 } else { 50 };
+            std::thread::sleep(Duration::from_millis(sleep_ms));
         }
     });
 }
