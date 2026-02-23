@@ -19,7 +19,7 @@ const DEFAULT_CONFIG: Config = {
   api_app_id: '',
   api_access_token: '',
   api_resource_id: 'volc.bigasr.sauc.duration',
-  hotkey: 'ROption',
+  hotkey: 'RAlt',
   microphone: null,
   asr_language: 'zh-CN',
   asr_enable_punc: true,
@@ -29,13 +29,12 @@ const DEFAULT_CONFIG: Config = {
 };
 
 const HOTKEY_OPTIONS: { label: string; value: string }[] = [
-  { label: 'Right Option', value: 'ROption' },
-  { label: 'Left Option', value: 'LOption' },
+  { label: 'Right Alt', value: 'RAlt' },
+  { label: 'Left Alt', value: 'LAlt' },
   { label: 'Right Control', value: 'RControl' },
   { label: 'Left Control', value: 'LControl' },
-  { label: 'F13', value: 'F13' },
-  { label: 'F14', value: 'F14' },
-  { label: 'F15', value: 'F15' },
+  { label: 'Right Shift', value: 'RShift' },
+  { label: 'Caps Lock', value: 'CapsLock' },
 ];
 
 const LANGUAGE_OPTIONS: { label: string; value: string }[] = [

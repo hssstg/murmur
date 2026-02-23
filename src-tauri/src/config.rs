@@ -31,7 +31,7 @@ impl Default for Config {
             api_app_id: String::new(),
             api_access_token: String::new(),
             api_resource_id: "volc.bigasr.sauc.duration".to_string(),
-            hotkey: "ROption".to_string(),
+            hotkey: "RAlt".to_string(),
             microphone: None,
             asr_language: default_asr_language(),
             asr_enable_punc: true,
