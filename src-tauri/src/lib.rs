@@ -22,7 +22,6 @@ pub fn run() {
     let cfg_for_keyboard = Arc::clone(&cfg);
 
     tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_websocket::init())
         .manage(Arc::clone(&cfg))
         .invoke_handler(tauri::generate_handler![

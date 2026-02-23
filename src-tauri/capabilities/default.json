@@ -5,12 +5,8 @@
   "windows": ["main", "settings"],
   "permissions": [
     "core:default",
-    "opener:default",
     "core:window:allow-show",
     "core:window:allow-hide",
-    "core:window:allow-set-focus",
-    "core:window:allow-set-always-on-top",
-    "core:window:allow-create",
     "core:path:default",
     "websocket:allow-connect",
     "websocket:allow-send",

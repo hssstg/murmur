@@ -97,6 +97,7 @@ impl AudioCapture {
             let device_name_str = device.name().unwrap_or_else(|_| "unknown".to_string());
             eprintln!("[audio] Capture: {}Hz, {} ch, device={}", actual_rate, channels, device_name_str);
 
+            let sample_fmt = default_cfg.sample_format();
             let stream_cfg = cpal::StreamConfig {
                 channels: default_cfg.channels(),
                 sample_rate: default_cfg.sample_rate(),
@@ -104,67 +105,80 @@ impl AudioCapture {
             };
 
             let ratio = actual_rate as f64 / TARGET_RATE as f64;
-            // Callback checks the per-session stop signal, not the shared is_active.
-            // This ensures that when stop() fires, the callback halts immediately
-            // even if a new session has already set is_active back to true.
-            let stop_cb = Arc::clone(&stop);
-            let warmup_cb = Arc::clone(&warmup_remaining);
-            let app_cb = app.clone();
 
-            let stream = device.build_input_stream(
-                &stream_cfg,
-                {
-                    let mut pos = 0.0_f64;
-                    let mut buf: Vec<i16> = Vec::new();
-                    // emit every 100ms = 1600 samples at 16kHz
-                    const EMIT_THRESHOLD: usize = 1600;
-                    move |data: &[f32], _| {
-                        if stop_cb.load(Ordering::SeqCst) { return; }
-                        // mix to mono
-                        let mono: Vec<f32> = data.chunks(channels)
-                            .map(|ch| ch.iter().sum::<f32>() / channels as f32)
-                            .collect();
-                        // resample to 16000Hz into buffer
-                        while pos < mono.len() as f64 {
-                            let i = pos as usize;
-                            let f = (pos - i as f64) as f32;
-                            let s = if i + 1 < mono.len() {
-                                mono[i] + f * (mono[i + 1] - mono[i])
-                            } else {
-                                mono[i]
-                            };
-                            buf.push((s * 32767.0).clamp(-32768.0, 32767.0) as i16);
-                            pos += ratio;
-                        }
-                        pos -= mono.len() as f64;
-                        if buf.len() >= EMIT_THRESHOLD {
-                            let remaining = warmup_cb.load(Ordering::Relaxed);
-                            if remaining > 0 {
-                                // Compute RMS of this chunk
-                                let rms = {
-                                    let sum_sq: f64 = buf.iter()
-                                        .map(|&s| (s as f64 / 32768.0).powi(2))
-                                        .sum();
-                                    (sum_sq / buf.len() as f64).sqrt() as f32
-                                };
-                                if rms >= WARMUP_RMS_THRESHOLD {
-                                    // Mic is warm — clear warmup counter and forward
-                                    warmup_cb.store(0, Ordering::Relaxed);
-                                    let _ = app_cb.emit("audio:chunk", buf.clone());
-                                } else {
-                                    // Still warming up — discard and count down
-                                    warmup_cb.store(remaining - 1, Ordering::Relaxed);
+            // Build a typed input stream for the device's native sample format,
+            // converting each sample to f32 before processing. This avoids
+            // StreamTypeNotSupported errors on devices that don't provide f32
+            // (e.g. USB mics that only expose i16).
+            macro_rules! build_stream {
+                ($t:ty, $to_f32:expr) => {{
+                    let stop_cb = Arc::clone(&stop);
+                    let warmup_cb = Arc::clone(&warmup_remaining);
+                    let app_cb = app.clone();
+                    device.build_input_stream(
+                        &stream_cfg,
+                        {
+                            let mut pos = 0.0_f64;
+                            let mut buf: Vec<i16> = Vec::new();
+                            // emit every 100ms = 1600 samples at 16kHz
+                            const EMIT_THRESHOLD: usize = 1600;
+                            move |data: &[$t], _| {
+                                if stop_cb.load(Ordering::SeqCst) { return; }
+                                // convert to f32 and mix to mono
+                                let mono: Vec<f32> = data.chunks(channels)
+                                    .map(|ch| ch.iter().map(|&s| $to_f32(s)).sum::<f32>() / channels as f32)
+                                    .collect();
+                                // resample to 16000Hz into buffer
+                                while pos < mono.len() as f64 {
+                                    let i = pos as usize;
+                                    let f = (pos - i as f64) as f32;
+                                    let s = if i + 1 < mono.len() {
+                                        mono[i] + f * (mono[i + 1] - mono[i])
+                                    } else {
+                                        mono[i]
+                                    };
+                                    buf.push((s * 32767.0).clamp(-32768.0, 32767.0) as i16);
+                                    pos += ratio;
                                 }
-                            } else {
-                                let _ = app_cb.emit("audio:chunk", buf.clone());
+                                pos -= mono.len() as f64;
+                                if buf.len() >= EMIT_THRESHOLD {
+                                    let remaining = warmup_cb.load(Ordering::Relaxed);
+                                    if remaining > 0 {
+                                        let rms = {
+                                            let sum_sq: f64 = buf.iter()
+                                                .map(|&s| (s as f64 / 32768.0).powi(2))
+                                                .sum();
+                                            (sum_sq / buf.len() as f64).sqrt() as f32
+                                        };
+                                        if rms >= WARMUP_RMS_THRESHOLD {
+                                            warmup_cb.store(0, Ordering::Relaxed);
+                                            let _ = app_cb.emit("audio:chunk", buf.clone());
+                                        } else {
+                                            warmup_cb.store(remaining - 1, Ordering::Relaxed);
+                                        }
+                                    } else {
+                                        let _ = app_cb.emit("audio:chunk", buf.clone());
+                                    }
+                                    buf.clear();
+                                }
                             }
-                            buf.clear();
-                        }
-                    }
-                },
-                |err| eprintln!("[audio] Error: {:?}", err),
-                None,
-            );
+                        },
+                        |err| eprintln!("[audio] Error: {:?}", err),
+                        None,
+                    )
+                }};
+            }
+
+            let stream = match sample_fmt {
+                cpal::SampleFormat::F32 => build_stream!(f32, |s: f32| s),
+                cpal::SampleFormat::I16 => build_stream!(i16, |s: i16| s as f32 / 32768.0),
+                cpal::SampleFormat::I32 => build_stream!(i32, |s: i32| s as f32 / 2_147_483_648.0),
+                cpal::SampleFormat::U16 => build_stream!(u16, |s: u16| (s as f32 - 32768.0) / 32768.0),
+                fmt => {
+                    eprintln!("[audio] Unsupported sample format {:?}, trying f32", fmt);
+                    build_stream!(f32, |s: f32| s)
+                }
+            };
 
             match stream {
                 Ok(s) => {
