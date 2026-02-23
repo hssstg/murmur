@@ -116,17 +116,16 @@ function buildAudioRequest(
     PROTOCOL.MSG_AUDIO_ONLY_REQUEST,
     flag,
     PROTOCOL.SERIAL_JSON,
-    PROTOCOL.COMPRESS_GZIP,
+    PROTOCOL.COMPRESS_NONE,
   );
 
   // For last packet, sequence is negative
   const seqValue = isLast ? -sequence : sequence;
   const seqBytes = intToBytes(seqValue);
 
-  const compressedAudio = gzipCompress(audioData);
-  const payloadSize = intToBytes(compressedAudio.length);
+  const payloadSize = intToBytes(audioData.length);
 
-  return concatUint8Arrays([header, seqBytes, payloadSize, compressedAudio]);
+  return concatUint8Arrays([header, seqBytes, payloadSize, audioData]);
 }
 
 // Parse server response
@@ -227,6 +226,12 @@ export class VolcengineClient extends EventEmitter<VolcengineClientEvents> {
   private sequence = 0;
   // Track open state manually since plugin-websocket has no readyState
   private wsOpen = false;
+  // Chunks that arrive while the WebSocket is still connecting are buffered here
+  // and flushed immediately after the init request is sent.
+  private pendingAudioChunks: Uint8Array[] = [];
+  // Set to true when finishAudio() is called while still connecting.
+  // The finish signal is sent right after the pending audio flush in connect().
+  private pendingFinish = false;
 
   constructor(config: VolcengineClientConfig) {
     super();
@@ -316,7 +321,7 @@ export class VolcengineClient extends EventEmitter<VolcengineClientEvents> {
       },
       request: {
         model_name: 'bigmodel',
-        enable_punc: true,
+        enable_punc: false,
         enable_itn: true,
         enable_ddc: true,
         show_utterances: true,
@@ -329,7 +334,31 @@ export class VolcengineClient extends EventEmitter<VolcengineClientEvents> {
     this.sequence = 2; // Next sequence for audio
 
     await this.ws.send({ type: 'Binary', data: Array.from(payload) });
-    this.emitStatus('listening');
+
+    // Flush any audio chunks that arrived during the connection handshake
+    if (this.pendingAudioChunks.length > 0) {
+      console.log('[volcengine-client] Flushing buffered audio chunks', {
+        count: this.pendingAudioChunks.length,
+      });
+      for (const chunk of this.pendingAudioChunks) {
+        this.sendAudioChunk(chunk);
+      }
+      this.pendingAudioChunks = [];
+    }
+
+    // If finishAudio() was called while we were still connecting, send the
+    // finish signal now (after the audio flush, so ordering is correct).
+    if (this.pendingFinish) {
+      this.pendingFinish = false;
+      console.log('[volcengine-client] Sending deferred finish signal', { sequence: this.sequence });
+      this.emitStatus('processing');
+      const finishPayload = buildAudioRequest(new Uint8Array(0), this.sequence, true);
+      this.ws.send({ type: 'Binary', data: Array.from(finishPayload) }).catch((err: unknown) => {
+        console.error('[volcengine-client] Failed to send deferred finish signal', { err });
+      });
+    } else {
+      this.emitStatus('listening');
+    }
   }
 
   disconnect(): void {
@@ -340,12 +369,21 @@ export class VolcengineClient extends EventEmitter<VolcengineClientEvents> {
   }
 
   sendAudio(chunk: ArrayBuffer): void {
+    if (this.connectionState === 'connecting') {
+      // Buffer until the WebSocket handshake completes and init request is sent
+      this.pendingAudioChunks.push(new Uint8Array(chunk));
+      return;
+    }
+
     if (!this.isConnected) {
       console.log('[volcengine-client] Cannot send audio: not connected');
       return;
     }
 
-    const audioData = new Uint8Array(chunk);
+    this.sendAudioChunk(new Uint8Array(chunk));
+  }
+
+  private sendAudioChunk(audioData: Uint8Array): void {
     const payload = buildAudioRequest(audioData, this.sequence, false);
     this.sequence++;
 
@@ -358,6 +396,14 @@ export class VolcengineClient extends EventEmitter<VolcengineClientEvents> {
   }
 
   finishAudio(): void {
+    if (this.connectionState === 'connecting') {
+      // connect() hasn't resolved yet — defer the finish signal until after the
+      // audio buffer is flushed in connect().
+      console.log('[volcengine-client] Deferring finish signal until connected');
+      this.pendingFinish = true;
+      return;
+    }
+
     if (!this.isConnected) {
       console.log('[volcengine-client] Cannot finish audio: not connected');
       return;
@@ -381,6 +427,8 @@ export class VolcengineClient extends EventEmitter<VolcengineClientEvents> {
     this.requestId = '';
     this.sequence = 0;
     this.wsOpen = false;
+    this.pendingAudioChunks = [];
+    this.pendingFinish = false;
   }
 
   private updateState(state: ConnectionState): void {

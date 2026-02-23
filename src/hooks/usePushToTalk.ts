@@ -12,6 +12,7 @@ export function usePushToTalk() {
   const clientRef = useRef<VolcengineClient | null>(null);
   const resultRef = useRef<ASRResult | null>(null);
   const isSessionActive = useRef(false);
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const LEVEL_COUNT = 16;
   const [audioLevels, setAudioLevels] = useState<number[]>(new Array(LEVEL_COUNT).fill(0));
@@ -21,6 +22,10 @@ export function usePushToTalk() {
     clientRef.current?.disconnect();
     clientRef.current = null;
     isSessionActive.current = false;
+    if (idleTimerRef.current !== null) {
+      clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = null;
+    }
   }
 
   useEffect(() => {
@@ -28,8 +33,9 @@ export function usePushToTalk() {
 
     // Forward Rust audio chunks to Volcengine client
     listen<number[]>('audio:chunk', (event) => {
+      console.log('[audio:chunk] received, len=', event.payload.length, 'active=', isSessionActive.current);
       const client = clientRef.current;
-      if (client?.isConnected) {
+      if (client) {
         const buf = new Int16Array(event.payload).buffer;
         client.sendAudio(buf);
       }
@@ -39,7 +45,8 @@ export function usePushToTalk() {
         const rms = samples.length > 0
           ? Math.sqrt(samples.reduce((s, x) => s + x * x, 0) / samples.length) / 32768
           : 0;
-        const level = Math.min(1, rms * 4);
+        const level = Math.min(1, rms * 20);
+        console.log('[audio:chunk] rms=', rms.toFixed(4), 'level=', level.toFixed(4));
         const next = [...levelsBufferRef.current.slice(1), level];
         levelsBufferRef.current = next;
         if (isSessionActive.current) {
@@ -51,6 +58,12 @@ export function usePushToTalk() {
     listen<void>('ptt:start', async () => {
       if (isSessionActive.current) return;
       isSessionActive.current = true;
+
+      // Cancel any pending idle timer from the previous session
+      if (idleTimerRef.current !== null) {
+        clearTimeout(idleTimerRef.current);
+        idleTimerRef.current = null;
+      }
 
       levelsBufferRef.current = new Array(LEVEL_COUNT).fill(0);
       setAudioLevels(new Array(LEVEL_COUNT).fill(0));
@@ -141,7 +154,8 @@ export function usePushToTalk() {
       }
 
       setStatus('done');
-      setTimeout(() => {
+      idleTimerRef.current = setTimeout(() => {
+        idleTimerRef.current = null;
         setStatus('idle');
         setResult(null);
       }, 800);

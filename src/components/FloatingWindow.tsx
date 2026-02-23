@@ -1,13 +1,11 @@
 import { useEffect } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { usePushToTalk } from '../hooks/usePushToTalk';
-import { StatusIndicator } from './StatusIndicator';
 import { WaveformVisualizer } from './WaveformVisualizer';
-import { ErrorDisplay } from './ErrorDisplay';
 import './floating-window.css';
 
 export function FloatingWindow() {
-  const { status, error, audioLevels } = usePushToTalk();
+  const { status, result, audioLevels } = usePushToTalk();
 
   useEffect(() => {
     const win = getCurrentWindow();
@@ -18,18 +16,19 @@ export function FloatingWindow() {
     }
   }, [status]);
 
-  const showWaveform =
-    status === 'connecting' || status === 'listening' || status === 'processing';
-  const waveformFading = status === 'processing';
+  const fading = status === 'processing';
 
   return (
     <div className="floating-window">
-      <div className="floating-window__content">
-        <StatusIndicator status={status} />
-        {showWaveform && (
-          <WaveformVisualizer levels={audioLevels} fading={waveformFading} />
+      <div className="pill">
+        {(status === 'done' || status === 'processing') && result?.text ? (
+          <span className="pill__result">{result.text}</span>
+        ) : (
+          <WaveformVisualizer levels={audioLevels} fading={fading} />
         )}
-        {error && <ErrorDisplay message={error} />}
+        {import.meta.env.DEV && (
+          <span className="pill__debug">{status}{result?.text ? ` · "${result.text}"` : ''}</span>
+        )}
       </div>
     </div>
   );
