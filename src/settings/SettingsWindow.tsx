@@ -84,7 +84,16 @@ export default function SettingsWindow() {
 
   useEffect(() => {
     invoke<Config>('get_config')
-      .then(setConfig)
+      .then((cfg) => {
+        // Migrate legacy macOS-specific hotkey values to cross-platform names
+        const legacyHotkeys: Record<string, string> = {
+          ROption: 'RAlt', LOption: 'LAlt', F13: 'RAlt', F14: 'RAlt', F15: 'RAlt',
+        };
+        if (legacyHotkeys[cfg.hotkey]) {
+          cfg = { ...cfg, hotkey: legacyHotkeys[cfg.hotkey] };
+        }
+        setConfig(cfg);
+      })
       .catch(() => {
         // Keep defaults if config load fails
       });
