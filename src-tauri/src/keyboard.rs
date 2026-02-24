@@ -192,8 +192,9 @@ pub fn start(app: AppHandle, audio: Arc<Mutex<AudioCapture>>, config: SharedConf
     std::thread::spawn(move || unsafe {
         let data_ptr = data_usize as *mut c_void;
 
-        // kCGSessionEventTap=1, kCGHeadInsertEventTap=0, kCGEventTapOptionDefault=0
-        let tap = CGEventTapCreate(1, 0, 0, event_mask(), tap_callback, data_ptr);
+        // kCGHIDEventTap=0, kCGHeadInsertEventTap=0, kCGEventTapOptionDefault=0
+        // HID-level tap captures all keyboard events before session routing.
+        let tap = CGEventTapCreate(0, 0, 0, event_mask(), tap_callback, data_ptr);
         if tap.is_null() {
             eprintln!("[keyboard] CGEventTapCreate failed — grant Accessibility permission");
             drop(Box::from_raw(data_ptr as *mut TapData));
