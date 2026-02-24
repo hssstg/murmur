@@ -13,6 +13,10 @@ interface Config {
   asr_enable_itn: boolean;
   asr_enable_ddc: boolean;
   asr_vocabulary: string;
+  llm_enabled: boolean;
+  llm_base_url: string;
+  llm_model: string;
+  llm_api_key: string;
 }
 
 const DEFAULT_CONFIG: Config = {
@@ -26,6 +30,10 @@ const DEFAULT_CONFIG: Config = {
   asr_enable_itn: true,
   asr_enable_ddc: true,
   asr_vocabulary: '',
+  llm_enabled: false,
+  llm_base_url: '',
+  llm_model: '',
+  llm_api_key: '',
 };
 
 const HOTKEY_OPTIONS: { label: string; value: string }[] = [

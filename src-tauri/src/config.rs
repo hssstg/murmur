@@ -23,6 +23,14 @@ pub struct Config {
     pub asr_enable_ddc: bool,
     #[serde(default)]
     pub asr_vocabulary: String,
+    #[serde(default)]
+    pub llm_enabled: bool,
+    #[serde(default)]
+    pub llm_base_url: String,
+    #[serde(default)]
+    pub llm_model: String,
+    #[serde(default)]
+    pub llm_api_key: String,
 }
 
 impl Default for Config {
@@ -38,6 +46,10 @@ impl Default for Config {
             asr_enable_itn: true,
             asr_enable_ddc: true,
             asr_vocabulary: String::new(),
+            llm_enabled: false,
+            llm_base_url: String::new(),
+            llm_model: String::new(),
+            llm_api_key: String::new(),
         }
     }
 }
