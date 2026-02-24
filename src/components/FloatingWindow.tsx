@@ -17,12 +17,15 @@ export function FloatingWindow() {
   }, [status]);
 
   const fading = status === 'processing';
+  const polishing = status === 'polishing';
 
   return (
     <div className="floating-window">
       <div className="pill">
-        {(status === 'done' || status === 'processing') && result?.text ? (
-          <span className="pill__result">{result.text}</span>
+        {(status === 'done' || status === 'processing' || status === 'polishing') && result?.text ? (
+          <span className={`pill__result${polishing ? ' pill__result--polishing' : ''}`}>
+            {result.text}
+          </span>
         ) : (
           <WaveformVisualizer levels={audioLevels} fading={fading} />
         )}

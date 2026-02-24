@@ -86,3 +86,16 @@ body {
   transition: height 80ms ease;
   min-height: 3px;
 }
+
+/* ============================================
+ * LLM polishing shimmer
+ * ============================================ */
+
+@keyframes shimmer {
+  0%, 100% { opacity: 0.92; }
+  50%       { opacity: 0.40; }
+}
+
+.pill__result--polishing {
+  animation: shimmer 1.2s ease-in-out infinite;
+}
