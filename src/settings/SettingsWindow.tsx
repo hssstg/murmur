@@ -314,6 +314,67 @@ export default function SettingsWindow() {
             </span>
           </div>
         </section>
+
+        {/* ── LLM 归整 ── */}
+        <section className="settings-section">
+          <div className="settings-section__heading">LLM 归整</div>
+
+          <div className="settings-toggle-row">
+            <span className="settings-toggle-row__label">启用</span>
+            <label className="settings-toggle">
+              <input
+                type="checkbox"
+                checked={config.llm_enabled}
+                onChange={(e) => setField('llm_enabled', e.target.checked)}
+              />
+              <span className="settings-toggle__track" />
+            </label>
+          </div>
+
+          {config.llm_enabled && (
+            <>
+              <div className="settings-field">
+                <label className="settings-field__label">Base URL</label>
+                <input
+                  className="settings-field__input settings-field__input--mono"
+                  type="text"
+                  placeholder="http://localhost:11434"
+                  value={config.llm_base_url}
+                  onChange={(e) => setField('llm_base_url', e.target.value)}
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+              </div>
+
+              <div className="settings-field">
+                <label className="settings-field__label">Model</label>
+                <input
+                  className="settings-field__input settings-field__input--mono"
+                  type="text"
+                  placeholder="qwen2.5:7b"
+                  value={config.llm_model}
+                  onChange={(e) => setField('llm_model', e.target.value)}
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+              </div>
+
+              <div className="settings-field">
+                <label className="settings-field__label">API Key</label>
+                <input
+                  className="settings-field__input settings-field__input--mono"
+                  type="password"
+                  placeholder="sk-... （本地模型可留空）"
+                  value={config.llm_api_key}
+                  onChange={(e) => setField('llm_api_key', e.target.value)}
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+                <span className="settings-field__hint">本地模型可留空</span>
+              </div>
+            </>
+          )}
+        </section>
       </div>
 
       <footer className="settings-footer">
