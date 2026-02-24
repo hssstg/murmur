@@ -5,6 +5,50 @@ import { VolcengineClient } from '../asr/volcengine-client';
 import type { ASRResult, ASRStatus } from '../asr/types';
 import { flog } from '../utils/log';
 
+const LLM_SYSTEM_PROMPT =
+  '你是一个文本归整助手。将用户输入的语音识别文本整理成流畅的书面语，' +
+  '修正标点、大小写和口语化表达，不改变原意，不添加任何解释，只输出归整后的文本。';
+
+const LLM_TIMEOUT_MS = 10_000;
+
+interface LLMConfig {
+  llm_enabled: boolean;
+  llm_base_url: string;
+  llm_model: string;
+  llm_api_key: string;
+}
+
+async function polishWithLLM(text: string, cfg: LLMConfig): Promise<string> {
+  if (!cfg.llm_enabled || !cfg.llm_base_url) return text;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), LLM_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${cfg.llm_base_url}/v1/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(cfg.llm_api_key ? { Authorization: `Bearer ${cfg.llm_api_key}` } : {}),
+      },
+      body: JSON.stringify({
+        model: cfg.llm_model,
+        messages: [
+          { role: 'system', content: LLM_SYSTEM_PROMPT },
+          { role: 'user', content: text },
+        ],
+        stream: false,
+      }),
+      signal: controller.signal,
+    });
+    if (!res.ok) return text;
+    const data = await res.json() as { choices?: Array<{ message?: { content?: string } }> };
+    return data?.choices?.[0]?.message?.content?.trim() || text;
+  } catch {
+    return text;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export function usePushToTalk() {
   const [status, setStatus] = useState<ASRStatus>('idle');
   const [result, setResult] = useState<ASRResult | null>(null);
@@ -15,6 +59,7 @@ export function usePushToTalk() {
   const isSessionActive = useRef(false);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const peakRmsRef = useRef(0);
+  const llmConfigRef = useRef<LLMConfig | null>(null);
 
   const LEVEL_COUNT = 16;
   const [audioLevels, setAudioLevels] = useState<number[]>(new Array(LEVEL_COUNT).fill(0));
@@ -90,6 +135,10 @@ export function usePushToTalk() {
           asr_enable_itn: boolean;
           asr_enable_ddc: boolean;
           asr_vocabulary: string;
+          llm_enabled: boolean;
+          llm_base_url: string;
+          llm_model: string;
+          llm_api_key: string;
         }>('get_config');
         const client = new VolcengineClient({
           appId: rawConfig.api_app_id,
@@ -102,6 +151,13 @@ export function usePushToTalk() {
           vocabulary: rawConfig.asr_vocabulary || undefined,
         });
         clientRef.current = client;
+
+        llmConfigRef.current = {
+          llm_enabled: rawConfig.llm_enabled,
+          llm_base_url: rawConfig.llm_base_url,
+          llm_model: rawConfig.llm_model,
+          llm_api_key: rawConfig.llm_api_key,
+        };
 
         client.on('result', (r: ASRResult) => {
           setResult(r);
@@ -185,9 +241,15 @@ export function usePushToTalk() {
       // Do NOT re-assign them here — a new ptt:start may have already set them for the next session.
 
       if (finalResult?.text) {
-        flog(`ptt:stop insert_text: len=${finalResult.text.length}`);
+        let textToInsert = finalResult.text;
+        const llmCfg = llmConfigRef.current;
+        if (llmCfg?.llm_enabled && llmCfg.llm_base_url) {
+          setStatus('polishing');
+          textToInsert = await polishWithLLM(finalResult.text, llmCfg);
+        }
+        flog(`ptt:stop insert_text: len=${textToInsert.length} polished=${textToInsert !== finalResult.text}`);
         try {
-          await invoke('insert_text', { text: finalResult.text });
+          await invoke('insert_text', { text: textToInsert });
         } catch (err) {
           setError(err instanceof Error ? err.message : String(err));
         }

@@ -20,6 +20,7 @@ const STATUS_CONFIG: Record<ASRStatus, { label: string; className: string }> = {
   connecting: { label: 'Listening...', className: 'status-indicator--connecting' },
   listening: { label: 'Listening...', className: 'status-indicator--listening' },
   processing: { label: 'Processing...', className: 'status-indicator--processing' },
+  polishing: { label: 'Polishing...', className: 'status-indicator--processing' },
   done: { label: 'Done', className: 'status-indicator--done' },
   error: { label: 'Error', className: 'status-indicator--error' },
 };
