@@ -58,6 +58,9 @@ extern "C" {
     fn CGEventGetIntegerValueField(event: *mut c_void, field: i32) -> i64;
     fn CGEventGetFlags(event: *mut c_void) -> u64;
     fn CGEventGetLocation(event: *mut c_void) -> CGPoint;
+    fn CGEventCreateKeyboardEvent(source: *mut c_void, keycode: u16, keydown: bool) -> *mut c_void;
+    fn CGEventPost(tap: u32, event: *mut c_void);
+    fn CFRelease(cf: *mut c_void);
 
     // CoreFoundation
     fn CFMachPortCreateRunLoopSource(
@@ -92,15 +95,32 @@ unsafe impl Send for TapData {}
 unsafe impl Sync for TapData {}
 
 // CGEventType values
-const EV_MOUSE_MOVED:   u32 = 5;
-const EV_MOUSE_DRAG_L:  u32 = 6;
-const EV_MOUSE_DRAG_R:  u32 = 7;
-const EV_KEY_DOWN:      u32 = 10;
-const EV_KEY_UP:        u32 = 11;
-const EV_FLAGS_CHANGED: u32 = 12;
+const EV_MOUSE_MOVED:       u32 = 5;
+const EV_MOUSE_DRAG_L:      u32 = 6;
+const EV_MOUSE_DRAG_R:      u32 = 7;
+const EV_KEY_DOWN:          u32 = 10;
+const EV_KEY_UP:            u32 = 11;
+const EV_FLAGS_CHANGED:     u32 = 12;
+const EV_OTHER_MOUSE_DOWN:  u32 = 25;
+const EV_OTHER_MOUSE_UP:    u32 = 26;
 
 // kCGKeyboardEventKeycode
 const FIELD_KEYCODE: i32 = 9;
+// kCGMouseEventButtonNumber (0=left, 1=right, 2=middle)
+const FIELD_MOUSE_BUTTON: i32 = 3;
+
+// kCGAnnotatedSessionEventTap — posts above the HID tap, won't re-trigger our callback
+const KCG_ANNOTATED_SESSION_EVENT_TAP: u32 = 2;
+const KEYCODE_RETURN: u16 = 36;
+
+fn mouse_btn_number(s: &str) -> Option<i64> {
+    match s {
+        "MouseMiddle"   => Some(2),
+        "MouseSideBack" => Some(3),
+        "MouseSideFwd"  => Some(4),
+        _               => None,
+    }
+}
 
 fn event_mask() -> u64 {
     (1 << EV_MOUSE_MOVED)
@@ -109,6 +129,8 @@ fn event_mask() -> u64 {
         | (1 << EV_KEY_DOWN)
         | (1 << EV_KEY_UP)
         | (1 << EV_FLAGS_CHANGED)
+        | (1 << EV_OTHER_MOUSE_DOWN)
+        | (1 << EV_OTHER_MOUSE_UP)
 }
 
 unsafe extern "C" fn tap_callback(
@@ -128,26 +150,42 @@ unsafe extern "C" fn tap_callback(
     }
 
     let keycode = CGEventGetIntegerValueField(event, FIELD_KEYCODE) as u64;
-    let hotkey = hotkey_to_vkcode(&d.config.lock().unwrap().hotkey);
+    let hotkey_str = d.config.lock().unwrap().hotkey.clone();
 
-    let (pressed, released) = if is_modifier_vk(hotkey) {
-        // Modifier key: detect press/release via flags transition.
-        if event_type == EV_FLAGS_CHANGED && keycode == hotkey {
-            let bit = modifier_flag_bit(hotkey);
-            let flags = CGEventGetFlags(event);
-            let prev = d.prev_flag.load(Ordering::SeqCst);
-            let curr = flags & bit;
-            d.prev_flag.store(curr, Ordering::SeqCst);
-            (prev == 0 && curr != 0, prev != 0 && curr == 0)
+    let mouse_btn_for_hotkey = mouse_btn_number(&hotkey_str);
+
+    let (pressed, released) = if let Some(target_btn) = mouse_btn_for_hotkey {
+        if matches!(event_type, EV_OTHER_MOUSE_DOWN | EV_OTHER_MOUSE_UP) {
+            let btn = CGEventGetIntegerValueField(event, FIELD_MOUSE_BUTTON);
+            if btn == target_btn {
+                (event_type == EV_OTHER_MOUSE_DOWN, event_type == EV_OTHER_MOUSE_UP)
+            } else {
+                (false, false)
+            }
         } else {
             (false, false)
         }
     } else {
-        // Regular key (F13-F15): detect via key down / key up.
-        if keycode == hotkey {
-            (event_type == EV_KEY_DOWN, event_type == EV_KEY_UP)
+        let hotkey = hotkey_to_vkcode(&hotkey_str);
+        if is_modifier_vk(hotkey) {
+            // Modifier key: detect press/release via flags transition.
+            if event_type == EV_FLAGS_CHANGED && keycode == hotkey {
+                let bit = modifier_flag_bit(hotkey);
+                let flags = CGEventGetFlags(event);
+                let prev = d.prev_flag.load(Ordering::SeqCst);
+                let curr = flags & bit;
+                d.prev_flag.store(curr, Ordering::SeqCst);
+                (prev == 0 && curr != 0, prev != 0 && curr == 0)
+            } else {
+                (false, false)
+            }
         } else {
-            (false, false)
+            // Regular key (F13-F15): detect via key down / key up.
+            if keycode == hotkey {
+                (event_type == EV_KEY_DOWN, event_type == EV_KEY_UP)
+            } else {
+                (false, false)
+            }
         }
     };
 
@@ -165,6 +203,28 @@ unsafe extern "C" fn tap_callback(
             a.stop();
         }
         let _ = d.app.emit("ptt:stop", ());
+    }
+
+    // Suppress mouse button events so they don't trigger system actions (e.g. paste).
+    if (pressed || released) && mouse_btn_for_hotkey.is_some() {
+        return std::ptr::null_mut();
+    }
+
+    // Mouse → Enter remapping: inject Return key on button press.
+    let enter_btn_str = d.config.lock().unwrap().mouse_enter_btn.clone().unwrap_or_default();
+    if let Some(enter_target) = mouse_btn_number(&enter_btn_str) {
+        if matches!(event_type, EV_OTHER_MOUSE_DOWN | EV_OTHER_MOUSE_UP) {
+            let btn = CGEventGetIntegerValueField(event, FIELD_MOUSE_BUTTON);
+            if btn == enter_target {
+                if event_type == EV_OTHER_MOUSE_DOWN {
+                    let kd = CGEventCreateKeyboardEvent(std::ptr::null_mut(), KEYCODE_RETURN, true);
+                    let ku = CGEventCreateKeyboardEvent(std::ptr::null_mut(), KEYCODE_RETURN, false);
+                    if !kd.is_null() { CGEventPost(KCG_ANNOTATED_SESSION_EVENT_TAP, kd); CFRelease(kd); }
+                    if !ku.is_null() { CGEventPost(KCG_ANNOTATED_SESSION_EVENT_TAP, ku); CFRelease(ku); }
+                }
+                return std::ptr::null_mut(); // suppress original mouse event
+            }
+        }
     }
 
     event

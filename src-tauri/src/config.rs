@@ -31,6 +31,10 @@ pub struct Config {
     pub llm_model: String,
     #[serde(default)]
     pub llm_api_key: String,
+    /// Mouse button to remap as Enter key. None = disabled.
+    /// Values: "MouseMiddle" | "MouseSideBack" | "MouseSideFwd"
+    #[serde(default)]
+    pub mouse_enter_btn: Option<String>,
 }
 
 impl Default for Config {
@@ -50,6 +54,7 @@ impl Default for Config {
             llm_base_url: String::new(),
             llm_model: String::new(),
             llm_api_key: String::new(),
+            mouse_enter_btn: None,
         }
     }
 }

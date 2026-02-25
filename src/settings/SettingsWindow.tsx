@@ -17,6 +17,7 @@ interface Config {
   llm_base_url: string;
   llm_model: string;
   llm_api_key: string;
+  mouse_enter_btn: string | null;
 }
 
 const DEFAULT_CONFIG: Config = {
@@ -34,6 +35,7 @@ const DEFAULT_CONFIG: Config = {
   llm_base_url: '',
   llm_model: '',
   llm_api_key: '',
+  mouse_enter_btn: null,
 };
 
 const HOTKEY_OPTIONS: { label: string; value: string }[] = [
@@ -41,6 +43,9 @@ const HOTKEY_OPTIONS: { label: string; value: string }[] = [
   { label: 'Left Option', value: 'LOption' },
   { label: 'Right Control', value: 'RControl' },
   { label: 'Left Control', value: 'LControl' },
+  { label: 'Middle Mouse Button', value: 'MouseMiddle' },
+  { label: 'Side Button Back (M4)', value: 'MouseSideBack' },
+  { label: 'Side Button Forward (M5)', value: 'MouseSideFwd' },
   { label: 'F13', value: 'F13' },
   { label: 'F14', value: 'F14' },
   { label: 'F15', value: 'F15' },
@@ -299,18 +304,18 @@ export default function SettingsWindow() {
           </div>
 
           <div className="settings-field">
-            <label className="settings-field__label">Vocabulary</label>
+            <label className="settings-field__label">热词表</label>
             <input
               className="settings-field__input settings-field__input--mono"
               type="text"
-              placeholder="Vocabulary ID (optional)"
+              placeholder="热词表名称（可选）"
               value={config.asr_vocabulary}
               onChange={(e) => setField('asr_vocabulary', e.target.value)}
               autoComplete="off"
               spellCheck={false}
             />
             <span className="settings-field__hint">
-              Custom vocabulary ID for improved recognition of domain-specific terms.
+              填写火山引擎自学习平台中的热词表名称，用于提升专有词汇的识别准确率。当前使用：murmur_vocab。
             </span>
           </div>
         </section>
@@ -374,6 +379,28 @@ export default function SettingsWindow() {
               </div>
             </>
           )}
+        </section>
+
+        {/* ── 鼠标按键映射 ── */}
+        <section className="settings-section">
+          <div className="settings-section__heading">鼠标按键映射</div>
+
+          <div className="settings-field">
+            <label className="settings-field__label">回车键映射</label>
+            <select
+              className="settings-field__select"
+              value={config.mouse_enter_btn ?? ''}
+              onChange={(e) => setField('mouse_enter_btn', e.target.value === '' ? null : e.target.value)}
+            >
+              <option value="">禁用</option>
+              <option value="MouseMiddle">中键</option>
+              <option value="MouseSideBack">侧键后退 (M4)</option>
+              <option value="MouseSideFwd">侧键前进 (M5)</option>
+            </select>
+            <span className="settings-field__hint">
+              按下所选鼠标键时，向当前焦点发送回车。
+            </span>
+          </div>
         </section>
       </div>
 
