@@ -338,7 +338,7 @@ export class VolcengineClient extends EventEmitter<VolcengineClientEvents> {
         enable_punc: this.config.enablePunc,
         enable_itn: this.config.enableItn,
         enable_ddc: this.config.enableDdc,
-        ...(this.config.vocabulary ? { vocabulary_id: this.config.vocabulary } : {}),
+        ...(this.config.vocabulary ? { corpus: { boosting_table_name: this.config.vocabulary } } : {}),
         show_utterances: true,
         result_type: 'full',
       },

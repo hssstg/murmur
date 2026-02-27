@@ -27,6 +27,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             text::insert_text,
             text::append_log,
+            text::polish_text,
             config::get_config,
             config::save_config,
             list_audio_devices,
@@ -69,6 +70,7 @@ pub fn run() {
                         }
                     }
                     "devtools" => {
+                        #[cfg(debug_assertions)]
                         if let Some(w) = app.get_webview_window("main") {
                             w.open_devtools();
                         }

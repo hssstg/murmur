@@ -61,6 +61,22 @@ body {
   -webkit-app-region: no-drag;
 }
 
+/* Device name shown above pill during recording */
+.pill__device {
+  position: absolute;
+  top: -18px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  -webkit-app-region: no-drag;
+}
+
 /* ============================================
  * Waveform Visualizer
  * ============================================ */

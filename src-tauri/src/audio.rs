@@ -96,6 +96,7 @@ impl AudioCapture {
             let channels = default_cfg.channels() as usize;
             let device_name_str = device.name().unwrap_or_else(|_| "unknown".to_string());
             eprintln!("[audio] Capture: {}Hz, {} ch, device={}", actual_rate, channels, device_name_str);
+            let _ = app.emit("audio:device", device_name_str);
 
             let sample_fmt = default_cfg.sample_format();
             let stream_cfg = cpal::StreamConfig {
@@ -115,6 +116,9 @@ impl AudioCapture {
                     let stop_cb = Arc::clone(&stop);
                     let warmup_cb = Arc::clone(&warmup_remaining);
                     let app_cb = app.clone();
+                    let stop_err = Arc::clone(&stop);
+                    let is_active_err = Arc::clone(&is_active);
+                    let app_err = app.clone();
                     device.build_input_stream(
                         &stream_cfg,
                         {
@@ -163,7 +167,16 @@ impl AudioCapture {
                                 }
                             }
                         },
-                        |err| eprintln!("[audio] Error: {:?}", err),
+                        move |err| {
+                            if matches!(err, cpal::StreamError::DeviceNotAvailable) {
+                                eprintln!("[audio] Device unavailable, stopping capture");
+                                is_active_err.store(false, Ordering::SeqCst);
+                                stop_err.store(true, Ordering::SeqCst);
+                                let _ = app_err.emit("ptt:stop", ());
+                            } else {
+                                eprintln!("[audio] Error: {:?}", err);
+                            }
+                        },
                         None,
                     )
                 }};

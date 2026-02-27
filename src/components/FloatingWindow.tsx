@@ -5,7 +5,7 @@ import { WaveformVisualizer } from './WaveformVisualizer';
 import './floating-window.css';
 
 export function FloatingWindow() {
-  const { status, result, audioLevels } = usePushToTalk();
+  const { status, result, audioLevels, deviceName } = usePushToTalk();
 
   useEffect(() => {
     const win = getCurrentWindow();
@@ -31,6 +31,9 @@ export function FloatingWindow() {
         )}
         {import.meta.env.DEV && (
           <span className="pill__debug">{status}{result?.text ? ` · "${result.text}"` : ''}</span>
+        )}
+        {status === 'listening' && deviceName && (
+          <span className="pill__device">{deviceName}</span>
         )}
       </div>
     </div>

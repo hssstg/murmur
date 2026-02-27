@@ -346,3 +346,68 @@ fn position_window_at_cursor(app: &AppHandle, cursor_x: f64, cursor_y: f64) {
 
     let _ = window.set_position(LogicalPosition::new(x, y));
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_hotkey_to_vkcode() {
+        assert_eq!(hotkey_to_vkcode("ROption"),  61);
+        assert_eq!(hotkey_to_vkcode("LOption"),  58);
+        assert_eq!(hotkey_to_vkcode("RControl"), 62);
+        assert_eq!(hotkey_to_vkcode("LControl"), 59);
+        assert_eq!(hotkey_to_vkcode("CapsLock"), 57);
+        assert_eq!(hotkey_to_vkcode("F13"), 105);
+        assert_eq!(hotkey_to_vkcode("F14"), 107);
+        assert_eq!(hotkey_to_vkcode("F15"), 113);
+        // unknown falls back to ROption (61)
+        assert_eq!(hotkey_to_vkcode("Unknown"), 61);
+    }
+
+    #[test]
+    fn test_is_modifier_vk() {
+        assert!(is_modifier_vk(58));  // LOption
+        assert!(is_modifier_vk(59));  // LControl
+        assert!(is_modifier_vk(61));  // ROption
+        assert!(is_modifier_vk(62));  // RControl
+        assert!(is_modifier_vk(57));  // CapsLock
+        assert!(!is_modifier_vk(105)); // F13
+        assert!(!is_modifier_vk(107)); // F14
+        assert!(!is_modifier_vk(0));
+    }
+
+    #[test]
+    fn test_modifier_flag_bit() {
+        // Option keys share the same flag bit
+        assert_eq!(modifier_flag_bit(58), 0x0008_0000);
+        assert_eq!(modifier_flag_bit(61), 0x0008_0000);
+        // Control keys share the same flag bit
+        assert_eq!(modifier_flag_bit(59), 0x0004_0000);
+        assert_eq!(modifier_flag_bit(62), 0x0004_0000);
+        // CapsLock
+        assert_eq!(modifier_flag_bit(57), 0x0001_0000);
+        // Unknown → 0
+        assert_eq!(modifier_flag_bit(0), 0);
+        assert_eq!(modifier_flag_bit(105), 0);
+    }
+
+    #[test]
+    fn test_event_mask_includes_required_events() {
+        let mask = event_mask();
+        // All expected event types must be set
+        for ev in [5u32, 6, 7, 10, 11, 12, 25, 26] {
+            assert!(mask & (1 << ev) != 0, "event type {ev} missing from mask");
+        }
+    }
+
+    #[test]
+    fn test_mouse_btn_number() {
+        assert_eq!(mouse_btn_number("MouseMiddle"),   Some(2));
+        assert_eq!(mouse_btn_number("MouseSideBack"), Some(3));
+        assert_eq!(mouse_btn_number("MouseSideFwd"),  Some(4));
+        assert_eq!(mouse_btn_number("ROption"),       None);
+        assert_eq!(mouse_btn_number("F13"),           None);
+        assert_eq!(mouse_btn_number(""),              None);
+    }
+}

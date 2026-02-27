@@ -102,6 +102,74 @@ pub fn save_config_to_disk(app: &tauri::AppHandle, config: &Config) -> Result<()
     Ok(())
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_config_default_values() {
+        let cfg = Config::default();
+        assert_eq!(cfg.hotkey, "ROption");
+        assert_eq!(cfg.api_resource_id, "volc.bigasr.sauc.duration");
+        assert_eq!(cfg.asr_language, "zh-CN");
+        assert!(cfg.asr_enable_punc);
+        assert!(cfg.asr_enable_itn);
+        assert!(cfg.asr_enable_ddc);
+        assert!(!cfg.llm_enabled);
+        assert!(cfg.microphone.is_none());
+        assert!(cfg.mouse_enter_btn.is_none());
+    }
+
+    #[test]
+    fn test_config_serde_roundtrip() {
+        let mut cfg = Config::default();
+        cfg.api_app_id = "test_app".to_string();
+        cfg.hotkey = "LControl".to_string();
+        cfg.llm_enabled = true;
+        cfg.llm_model = "gpt-4".to_string();
+        cfg.mouse_enter_btn = Some("MouseSideBack".to_string());
+
+        let json = serde_json::to_string(&cfg).unwrap();
+        let restored: Config = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(restored.api_app_id, "test_app");
+        assert_eq!(restored.hotkey, "LControl");
+        assert!(restored.llm_enabled);
+        assert_eq!(restored.llm_model, "gpt-4");
+        assert_eq!(restored.mouse_enter_btn, Some("MouseSideBack".to_string()));
+    }
+
+    #[test]
+    fn test_config_missing_new_fields_use_defaults() {
+        // Simulate an old config file that lacks newer optional fields
+        let json = r#"{
+            "api_app_id": "123",
+            "api_access_token": "tok",
+            "api_resource_id": "volc.bigasr.sauc.duration",
+            "hotkey": "ROption",
+            "microphone": null
+        }"#;
+        let cfg: Config = serde_json::from_str(json).unwrap();
+
+        assert_eq!(cfg.asr_language, "zh-CN");
+        assert!(cfg.asr_enable_punc);
+        assert!(!cfg.llm_enabled);
+        assert!(cfg.llm_base_url.is_empty());
+        assert!(cfg.mouse_enter_btn.is_none());
+    }
+
+    #[test]
+    fn test_config_microphone_none_and_some() {
+        let json_none = r#"{"api_app_id":"","api_access_token":"","api_resource_id":"","hotkey":"ROption","microphone":null}"#;
+        let cfg: Config = serde_json::from_str(json_none).unwrap();
+        assert!(cfg.microphone.is_none());
+
+        let json_some = r#"{"api_app_id":"","api_access_token":"","api_resource_id":"","hotkey":"ROption","microphone":"DJI Mic Mini"}"#;
+        let cfg2: Config = serde_json::from_str(json_some).unwrap();
+        assert_eq!(cfg2.microphone, Some("DJI Mic Mini".to_string()));
+    }
+}
+
 #[tauri::command]
 pub fn get_config(
     _app: tauri::AppHandle,
