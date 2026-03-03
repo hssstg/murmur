@@ -79,6 +79,8 @@
 "hotwords.fetch.nolist" = "Word list not found (never synced)";
 "hotwords.fetch.success" = "Loaded %d words from Volcengine";
 "hotwords.fetch.error" = "Load failed: %@";
+"hotwords.sync.success" = "Synced %d words";
+"hotwords.sync.success.unknown" = "Sync successful (word count unknown)";
 "hotwords.sync.error" = "Failed: %@";
 "hotwords.extract.nohistory" = "No history available";
 "hotwords.extract.nowords" = "No new hot words found";

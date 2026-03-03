@@ -141,7 +141,8 @@ public enum VolcHotwordsClient {
     }
 
     /// Upload local words to Volcengine boosting table (create or update).
-    public static func sync(ak: String, sk: String, appId: String, tableName: String, words: [String]) async throws -> String {
+    /// Returns the word count on success, or nil if the word count is unknown.
+    public static func sync(ak: String, sk: String, appId: String, tableName: String, words: [String]) async throws -> Int? {
         // Filter words containing forbidden characters (Volcengine restriction)
         let filtered = words.filter { !$0.contains(where: { "/\\|<>'".contains($0) }) }
 
@@ -162,9 +163,9 @@ public enum VolcHotwordsClient {
         let result = try await multipartCall(ak: ak, sk: sk, action: action, fields: fields, fileBytes: fileBytes)
 
         guard let wordCount = result["WordCount"] as? Int ?? (result["WordCount"].flatMap { String(describing: $0) }.flatMap(Int.init)) else {
-            return "同步成功（词数未知）"
+            return nil
         }
-        return "同步成功，词数 \(wordCount)"
+        return wordCount
     }
 
     // MARK: - Private

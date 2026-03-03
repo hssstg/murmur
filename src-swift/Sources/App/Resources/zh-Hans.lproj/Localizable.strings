@@ -79,6 +79,8 @@
 "hotwords.fetch.nolist" = "词表不存在（未同步过）";
 "hotwords.fetch.success" = "已从火山加载 %d 个词";
 "hotwords.fetch.error" = "加载失败：%@";
+"hotwords.sync.success" = "同步成功，词数 %d";
+"hotwords.sync.success.unknown" = "同步成功（词数未知）";
 "hotwords.sync.error" = "失败：%@";
 "hotwords.extract.nohistory" = "暂无历史记录";
 "hotwords.extract.nowords" = "未发现新热词";

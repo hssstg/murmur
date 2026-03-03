@@ -189,10 +189,15 @@ struct HotwordsView: View {
         syncing = true; syncStatus = ""; syncIsError = false
         defer { syncing = false }
         do {
-            syncStatus = try await VolcHotwordsClient.sync(
+            let wordCount = try await VolcHotwordsClient.sync(
                 ak: config.hotwords_ak, sk: config.hotwords_sk,
                 appId: config.api_app_id, tableName: config.asr_vocabulary,
                 words: store.words)
+            if let count = wordCount {
+                syncStatus = String(format: String(localized: "hotwords.sync.success"), count)
+            } else {
+                syncStatus = String(localized: "hotwords.sync.success.unknown")
+            }
         } catch {
             syncIsError = true
             syncStatus = String(format: String(localized: "hotwords.sync.error"), error.localizedDescription)
