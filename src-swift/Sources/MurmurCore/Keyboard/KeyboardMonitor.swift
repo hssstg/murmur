@@ -115,16 +115,18 @@ public class KeyboardMonitor {
         let flags = event.flags
         let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
 
-        let (flagBit, expectedKeyCode): (CGEventFlags, Int64) = {
-            switch hotkey {
-            case "ROption":  return (.maskAlternate, 61)
-            case "LOption":  return (.maskAlternate, 58)
-            case "RControl": return (.maskControl,   62)
-            case "LControl": return (.maskControl,   59)
-            case "CapsLock": return (.maskAlphaShift, 57)
-            default: return (.maskAlternate, 61)
-            }
-        }()
+        let (flagBit, expectedKeyCode): (CGEventFlags, Int64)
+        switch hotkey {
+        case "ROption":  (flagBit, expectedKeyCode) = (.maskAlternate,  61)
+        case "LOption":  (flagBit, expectedKeyCode) = (.maskAlternate,  58)
+        case "RControl": (flagBit, expectedKeyCode) = (.maskControl,    62)
+        case "LControl": (flagBit, expectedKeyCode) = (.maskControl,    59)
+        case "CapsLock": (flagBit, expectedKeyCode) = (.maskAlphaShift, 57)
+        default:
+            // Hotkey is a mouse button or F-key — ignore flagsChanged entirely
+            lastFlags = flags
+            return Unmanaged.passRetained(event)
+        }
 
         if keyCode == expectedKeyCode {
             let hadFlag = lastFlags.contains(flagBit)
