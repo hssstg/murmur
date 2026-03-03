@@ -136,13 +136,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             }
         }
         let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "历史记录...", action: #selector(openHistory),   keyEquivalent: "h"))
-        menu.addItem(NSMenuItem(title: "热词库...",   action: #selector(openHotwords), keyEquivalent: "w"))
-        menu.addItem(NSMenuItem(title: "使用统计...", action: #selector(openStats),    keyEquivalent: "u"))
+        menu.addItem(NSMenuItem(title: String(localized: "menu.history"),  action: #selector(openHistory),   keyEquivalent: "h"))
+        menu.addItem(NSMenuItem(title: String(localized: "menu.hotwords"), action: #selector(openHotwords), keyEquivalent: "w"))
+        menu.addItem(NSMenuItem(title: String(localized: "menu.stats"),    action: #selector(openStats),    keyEquivalent: "u"))
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "设置...",     action: #selector(openSettings), keyEquivalent: ","))
+        menu.addItem(NSMenuItem(title: String(localized: "menu.settings"), action: #selector(openSettings), keyEquivalent: ","))
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "退出",        action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: String(localized: "menu.quit"),     action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         statusItem.menu = menu
     }
 
@@ -150,7 +150,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         if let w = statsWindow { w.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true); return }
         let hosting = NSHostingController(rootView: StatsView(store: historyStore))
         let win = EscapableWindow(contentViewController: hosting)
-        win.title = "Murmur 使用统计"
+        win.title = String(localized: "window.stats.title")
         win.setContentSize(NSSize(width: 560, height: 560))
         win.styleMask = [.titled, .closable, .resizable]
         win.center()
@@ -170,7 +170,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             rootView: HistoryView(store: historyStore)
         )
         let win = EscapableWindow(contentViewController: hosting)
-        win.title = "Murmur 历史记录"
+        win.title = String(localized: "window.history.title")
         win.setContentSize(NSSize(width: 540, height: 480))
         win.styleMask = [.titled, .closable, .resizable, .miniaturizable]
         win.center()
@@ -190,7 +190,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             rootView: HotwordsView(store: hotwordStore, historyStore: historyStore, config: configStore.config)
         )
         let win = EscapableWindow(contentViewController: hosting)
-        win.title = "Murmur 热词库"
+        win.title = String(localized: "window.hotwords.title")
         win.setContentSize(NSSize(width: 420, height: 400))
         win.styleMask = [.titled, .closable, .resizable, .miniaturizable]
         win.center()
@@ -227,7 +227,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 .frame(minWidth: 480, minHeight: 500)
         )
         let win = EscapableWindow(contentViewController: hosting)
-        win.title = "Murmur 设置"
+        win.title = String(localized: "window.settings.title")
         win.setContentSize(NSSize(width: 500, height: 560))
         win.styleMask = [.titled, .closable, .resizable]
         win.center()
