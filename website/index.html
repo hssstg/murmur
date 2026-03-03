@@ -8,537 +8,439 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:        #080c14;
-      --bg-1:      #0d1420;
-      --bg-2:      #111c2e;
-      --accent:    #4fa3ef;
-      --accent-lo: rgba(79, 163, 239, 0.12);
-      --accent-md: rgba(79, 163, 239, 0.30);
-      --text:      #e8edf5;
-      --text-2:    #8899b0;
-      --text-3:    #4a5a70;
-      --border:    rgba(79, 163, 239, 0.15);
-      --serif:     Georgia, 'Times New Roman', serif;
-      --sans:      -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
-      --mono:      'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      --white:   #ffffff;
+      --off:     #fafaf8;
+      --ink:     #111111;
+      --ink-2:   #555555;
+      --ink-3:   #999999;
+      --line:    #e8e8e4;
+      --accent:  #b07848;   /* warm amber, low-sat */
+      --sans:    -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
     }
 
     html { scroll-behavior: smooth; }
 
     body {
-      background: var(--bg);
-      color: var(--text);
+      background: var(--white);
+      color: var(--ink);
       font-family: var(--sans);
       line-height: 1.6;
-      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* ─── NAV ──────────────────────────────────────────────── */
+    /* ─── NAV ─────────────────────────────────────────────── */
     nav {
       position: fixed;
       top: 0; left: 0; right: 0;
       z-index: 100;
+      height: 56px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 0 48px;
-      height: 60px;
-      background: rgba(8, 12, 20, 0.85);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-bottom: 1px solid rgba(79, 163, 239, 0.08);
+      background: rgba(255,255,255,0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--line);
     }
 
     .nav-logo {
-      font-family: var(--serif);
-      font-size: 20px;
-      font-style: italic;
-      color: var(--accent);
-      letter-spacing: 0.03em;
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      color: var(--ink);
       text-decoration: none;
     }
 
     .nav-links {
       display: flex;
-      gap: 36px;
+      gap: 32px;
       list-style: none;
     }
 
     .nav-links a {
-      color: var(--text-2);
+      font-size: 13px;
+      color: var(--ink-2);
       text-decoration: none;
-      font-size: 14px;
-      letter-spacing: 0.04em;
-      transition: color 0.2s;
+      transition: color 0.15s;
     }
 
-    .nav-links a:hover { color: var(--text); }
+    .nav-links a:hover { color: var(--ink); }
 
-    /* ─── HERO ─────────────────────────────────────────────── */
+    /* ─── HERO ────────────────────────────────────────────── */
     .hero {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 120px 24px 80px;
-      position: relative;
-      overflow: hidden;
+      padding: 160px 48px 120px;
+      max-width: 1080px;
+      margin: 0 auto;
     }
 
-    .hero-noise {
-      position: absolute;
-      inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='512' height='512' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
-      background-size: 256px;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .hero-glow {
-      position: absolute;
-      top: 20%;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 600px;
-      height: 300px;
-      background: radial-gradient(ellipse, rgba(79, 163, 239, 0.08) 0%, transparent 70%);
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .hero-content {
-      position: relative;
-      z-index: 1;
-      text-align: center;
-      max-width: 720px;
-    }
-
-    .hero-badge {
+    .hero-eyebrow {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: var(--accent-lo);
-      border: 1px solid var(--border);
-      border-radius: 100px;
-      padding: 6px 16px;
       font-size: 12px;
-      font-family: var(--mono);
-      color: var(--accent);
-      letter-spacing: 0.06em;
+      font-weight: 500;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      margin-bottom: 40px;
-      animation: fadeUp 0.6s ease both;
+      color: var(--accent);
+      margin-bottom: 32px;
     }
 
-    .hero-badge::before {
+    .hero-eyebrow::before {
       content: '';
-      width: 6px; height: 6px;
+      display: block;
+      width: 20px;
+      height: 1px;
       background: var(--accent);
-      border-radius: 50%;
-      animation: pulse 2s ease infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(0.8); }
     }
 
     h1 {
-      font-family: var(--serif);
-      font-size: clamp(48px, 7vw, 86px);
-      font-weight: 400;
-      line-height: 1.08;
-      letter-spacing: -0.02em;
-      color: var(--text);
-      margin-bottom: 28px;
-      animation: fadeUp 0.6s 0.1s ease both;
-    }
-
-    h1 em {
-      font-style: italic;
-      color: var(--accent);
+      font-size: clamp(52px, 7.5vw, 100px);
+      font-weight: 200;
+      line-height: 1.04;
+      letter-spacing: -0.035em;
+      color: var(--ink);
+      margin-bottom: 36px;
     }
 
     .hero-sub {
-      font-size: 18px;
-      color: var(--text-2);
-      line-height: 1.7;
-      max-width: 500px;
-      margin: 0 auto 56px;
-      animation: fadeUp 0.6s 0.2s ease both;
+      font-size: 17px;
+      font-weight: 300;
+      color: var(--ink-2);
+      line-height: 1.75;
+      max-width: 480px;
+      margin-bottom: 56px;
     }
 
-    /* ─── PILL DEMO ─────────────────────────────────────────── */
-    .pill-demo {
-      animation: fadeUp 0.6s 0.3s ease both;
-      margin-bottom: 60px;
-    }
-
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 12px;
-      background: rgba(13, 20, 32, 0.95);
-      border: 1px solid rgba(79, 163, 239, 0.25);
-      border-radius: 100px;
-      padding: 10px 20px 10px 14px;
-      backdrop-filter: blur(20px);
-      box-shadow:
-        0 0 0 1px rgba(79, 163, 239, 0.08),
-        0 8px 32px rgba(0, 0, 0, 0.5),
-        0 0 60px rgba(79, 163, 239, 0.06);
-    }
-
-    .pill-dot {
-      width: 10px; height: 10px;
-      background: #ef4f4f;
-      border-radius: 50%;
-      flex-shrink: 0;
-      animation: dotPulse 1.4s ease infinite;
-    }
-
-    @keyframes dotPulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 79, 79, 0.4); }
-      50% { box-shadow: 0 0 0 5px rgba(239, 79, 79, 0); }
-    }
-
-    .pill canvas {
-      display: block;
-    }
-
-    .pill-label {
-      font-size: 13px;
-      color: var(--text-2);
-      font-family: var(--mono);
-      letter-spacing: 0.02em;
-      white-space: nowrap;
-    }
-
-    /* ─── DOWNLOAD CTA ─────────────────────────────────────── */
-    .hero-actions {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      justify-content: center;
-      flex-wrap: wrap;
-      animation: fadeUp 0.6s 0.4s ease both;
-    }
-
-    .btn-download {
+    /* Pill demo */
+    .pill-wrap {
       display: inline-flex;
       align-items: center;
       gap: 10px;
-      background: var(--accent);
-      color: #000;
-      font-size: 15px;
-      font-weight: 600;
-      text-decoration: none;
-      padding: 14px 28px;
-      border-radius: 12px;
-      transition: all 0.2s;
+      background: var(--off);
+      border: 1px solid var(--line);
+      border-radius: 100px;
+      padding: 8px 18px 8px 12px;
+      margin-bottom: 56px;
+    }
+
+    .pill-dot {
+      width: 8px; height: 8px;
+      background: #e05555;
+      border-radius: 50%;
+      flex-shrink: 0;
+      animation: dotBlink 1.6s ease infinite;
+    }
+
+    @keyframes dotBlink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.35; }
+    }
+
+    .pill-wave {
+      display: block;
+    }
+
+    .pill-text {
+      font-size: 13px;
+      color: var(--ink-2);
       letter-spacing: 0.01em;
+      min-width: 88px;
     }
 
-    .btn-download:hover {
-      background: #6cb8f5;
-      transform: translateY(-1px);
-      box-shadow: 0 8px 24px rgba(79, 163, 239, 0.35);
+    /* CTA */
+    .cta-row {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      flex-wrap: wrap;
     }
 
-    .btn-download svg { flex-shrink: 0; }
-
-    .btn-secondary {
+    .btn-dl {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      color: var(--text-2);
+      background: var(--ink);
+      color: var(--white);
       font-size: 14px;
+      font-weight: 500;
       text-decoration: none;
-      padding: 14px 4px;
-      transition: color 0.2s;
-      letter-spacing: 0.02em;
+      padding: 12px 24px;
+      border-radius: 8px;
+      letter-spacing: -0.01em;
+      transition: background 0.15s;
     }
 
-    .btn-secondary:hover { color: var(--text); }
+    .btn-dl:hover { background: #2a2a2a; }
+
+    .btn-link {
+      font-size: 14px;
+      color: var(--ink-3);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .btn-link:hover { color: var(--ink); }
 
     .build-meta {
-      margin-top: 16px;
-      font-size: 12px;
-      font-family: var(--mono);
-      color: var(--text-3);
-      letter-spacing: 0.04em;
-      animation: fadeUp 0.6s 0.5s ease both;
+      margin-top: 14px;
+      font-size: 11px;
+      color: var(--ink-3);
+      letter-spacing: 0.03em;
     }
 
-    .build-meta span { color: var(--text-2); }
+    .build-meta b { color: var(--ink-2); font-weight: 400; }
 
-    /* ─── SECTION COMMON ───────────────────────────────────── */
-    section {
-      padding: 120px 24px;
-    }
-
-    .section-inner {
-      max-width: 1040px;
+    /* ─── DIVIDER ────────────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: var(--line);
+      max-width: 1080px;
       margin: 0 auto;
+    }
+
+    /* ─── FEATURES ───────────────────────────────────────── */
+    .features {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 100px 48px;
     }
 
     .section-label {
       font-size: 11px;
-      font-family: var(--mono);
-      color: var(--accent);
-      letter-spacing: 0.12em;
+      font-weight: 500;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      margin-bottom: 20px;
+      color: var(--ink-3);
+      margin-bottom: 48px;
     }
-
-    h2 {
-      font-family: var(--serif);
-      font-size: clamp(32px, 4vw, 52px);
-      font-weight: 400;
-      line-height: 1.15;
-      letter-spacing: -0.02em;
-      color: var(--text);
-      margin-bottom: 60px;
-    }
-
-    h2 em {
-      font-style: italic;
-      color: var(--accent);
-    }
-
-    /* ─── FEATURES ─────────────────────────────────────────── */
-    .features-section { background: var(--bg-1); }
 
     .features-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 2px;
-      background: var(--border);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      overflow: hidden;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
     }
 
-    .feature-card {
-      background: var(--bg-1);
-      padding: 36px 32px;
-      transition: background 0.2s;
+    .feature {
+      padding: 40px 36px 40px 0;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
     }
 
-    .feature-card:hover { background: var(--bg-2); }
+    .feature:nth-child(3n) { border-right: none; }
+    .feature:nth-child(4),
+    .feature:nth-child(5),
+    .feature:nth-child(6) { border-bottom: none; }
 
-    .feature-icon {
-      width: 40px; height: 40px;
-      background: var(--accent-lo);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .feature:nth-child(2),
+    .feature:nth-child(3),
+    .feature:nth-child(5),
+    .feature:nth-child(6) { padding-left: 36px; }
+
+    .feature-num {
+      font-size: 11px;
+      color: var(--accent);
+      font-weight: 500;
+      letter-spacing: 0.08em;
       margin-bottom: 20px;
-      font-size: 18px;
     }
 
     .feature-title {
-      font-family: var(--serif);
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 400;
-      color: var(--text);
-      margin-bottom: 10px;
       letter-spacing: -0.01em;
+      color: var(--ink);
+      margin-bottom: 10px;
     }
 
     .feature-desc {
-      font-size: 14px;
-      color: var(--text-2);
-      line-height: 1.65;
-    }
-
-    /* ─── HOW IT WORKS ─────────────────────────────────────── */
-    .steps {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 48px;
-      margin-top: 0;
-    }
-
-    @media (max-width: 680px) {
-      .steps { grid-template-columns: 1fr; gap: 36px; }
-    }
-
-    .step {
-      position: relative;
-    }
-
-    .step-num {
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--accent);
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .step-num::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
-
-    .step-title {
-      font-family: var(--serif);
-      font-size: 22px;
-      font-weight: 400;
-      color: var(--text);
-      margin-bottom: 12px;
-      letter-spacing: -0.01em;
-    }
-
-    .step-desc {
-      font-size: 14px;
-      color: var(--text-2);
-      line-height: 1.65;
-    }
-
-    .step-key {
-      display: inline-block;
-      background: var(--bg-2);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 2px 8px;
-      font-family: var(--mono);
-      font-size: 12px;
-      color: var(--accent);
-      margin: 0 2px;
-      vertical-align: middle;
-    }
-
-    /* ─── DOWNLOAD SECTION ─────────────────────────────────── */
-    .download-section { background: var(--bg-1); }
-
-    .download-card {
-      background: var(--bg-2);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 60px;
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .download-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 50%;
-      transform: translateX(-50%);
-      width: 400px; height: 1px;
-      background: linear-gradient(90deg, transparent, var(--accent), transparent);
-    }
-
-    .download-card h2 {
-      margin-bottom: 20px;
-    }
-
-    .download-card p {
-      color: var(--text-2);
-      font-size: 16px;
-      max-width: 480px;
-      margin: 0 auto 40px;
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--ink-2);
       line-height: 1.7;
     }
 
-    .req-tags {
+    /* ─── HOW ────────────────────────────────────────────── */
+    .how {
+      background: var(--off);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .how-inner {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 100px 48px;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 64px;
+      margin-top: 64px;
+    }
+
+    .step-num {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      color: var(--ink-3);
+      margin-bottom: 20px;
+    }
+
+    .step-title {
+      font-size: 20px;
+      font-weight: 300;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      margin-bottom: 12px;
+    }
+
+    .step-desc {
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--ink-2);
+      line-height: 1.75;
+    }
+
+    .kbd {
+      display: inline-block;
+      font-size: 11px;
+      font-family: -apple-system, sans-serif;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-bottom-width: 2px;
+      border-radius: 4px;
+      padding: 1px 6px;
+      color: var(--ink-2);
+      margin: 0 1px;
+    }
+
+    /* ─── DOWNLOAD ───────────────────────────────────────── */
+    .download {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 120px 48px;
       display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 32px;
-      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 80px;
     }
 
-    .req-tag {
-      font-size: 12px;
-      font-family: var(--mono);
-      color: var(--text-2);
-      background: var(--bg);
-      border: 1px solid var(--text-3);
-      border-radius: 6px;
-      padding: 4px 10px;
-      letter-spacing: 0.04em;
+    .dl-left { flex: 1; }
+
+    .dl-left h2 {
+      font-size: clamp(36px, 4vw, 60px);
+      font-weight: 200;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 24px;
     }
 
-    /* ─── FOOTER ───────────────────────────────────────────── */
+    .dl-left p {
+      font-size: 15px;
+      font-weight: 300;
+      color: var(--ink-2);
+      line-height: 1.7;
+      max-width: 380px;
+      margin-bottom: 40px;
+    }
+
+    .dl-right {
+      flex-shrink: 0;
+      padding-top: 8px;
+    }
+
+    .req-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .req-list li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--ink-2);
+    }
+
+    .req-list li::before {
+      content: '';
+      width: 4px; height: 4px;
+      background: var(--accent);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ─── FOOTER ─────────────────────────────────────────── */
     footer {
-      padding: 48px 24px;
-      border-top: 1px solid var(--border);
+      border-top: 1px solid var(--line);
+    }
+
+    .footer-inner {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 36px 48px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      max-width: 1040px;
-      margin: 0 auto;
       flex-wrap: wrap;
-      gap: 16px;
+      gap: 12px;
     }
 
     .footer-brand {
-      font-family: var(--serif);
-      font-style: italic;
-      color: var(--accent);
-      font-size: 18px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--ink);
       text-decoration: none;
     }
 
     .footer-links {
       display: flex;
-      gap: 28px;
+      gap: 24px;
       list-style: none;
     }
 
     .footer-links a {
-      color: var(--text-3);
-      text-decoration: none;
       font-size: 13px;
-      transition: color 0.2s;
+      color: var(--ink-3);
+      text-decoration: none;
+      transition: color 0.15s;
     }
 
-    .footer-links a:hover { color: var(--text-2); }
+    .footer-links a:hover { color: var(--ink-2); }
 
     .footer-copy {
-      color: var(--text-3);
       font-size: 12px;
-      width: 100%;
-      text-align: right;
+      color: var(--ink-3);
     }
 
-    /* ─── ANIMATIONS ───────────────────────────────────────── */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(16px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ─── SCROLLREVEAL ─────────────────────────────────────── */
-    .reveal {
+    /* ─── REVEAL ────────────────────────────────────────── */
+    .r {
       opacity: 0;
-      transform: translateY(24px);
-      transition: opacity 0.7s ease, transform 0.7s ease;
+      transform: translateY(18px);
+      transition: opacity 0.65s ease, transform 0.65s ease;
     }
 
-    .reveal.visible {
+    .r.on {
       opacity: 1;
-      transform: translateY(0);
+      transform: none;
     }
 
-    /* ─── RESPONSIVE ───────────────────────────────────────── */
-    @media (max-width: 768px) {
+    /* ─── RESPONSIVE ─────────────────────────────────────── */
+    @media (max-width: 800px) {
       nav { padding: 0 24px; }
       .nav-links { display: none; }
-      .download-card { padding: 40px 24px; }
-      footer { flex-direction: column; align-items: flex-start; }
-      .footer-copy { text-align: left; }
+      .hero, .features, .how-inner, .download { padding-left: 24px; padding-right: 24px; }
+      .features-grid { grid-template-columns: 1fr; }
+      .feature { border-right: none !important; padding-left: 0 !important; }
+      .feature:last-child { border-bottom: none; }
+      .steps { grid-template-columns: 1fr; gap: 40px; }
+      .download { flex-direction: column; gap: 48px; }
+      h1 { font-size: 48px; }
     }
   </style>
 </head>
@@ -551,242 +453,206 @@
     <li><a href="#features">功能</a></li>
     <li><a href="#how">使用方法</a></li>
     <li><a href="#download">下载</a></li>
-    <li><a href="CHANGELOG.md" target="_blank">更新日志</a></li>
+    <li><a href="http://192.168.230.23/luoke/murmur" target="_blank">源码</a></li>
   </ul>
 </nav>
 
 <!-- HERO -->
 <section class="hero">
-  <div class="hero-noise"></div>
-  <div class="hero-glow"></div>
+  <div class="hero-eyebrow">macOS 语音输入</div>
 
-  <div class="hero-content">
-    <div class="hero-badge">macOS 语音输入</div>
+  <h1>说话，直接<br>出现在光标</h1>
 
-    <h1>说话，<em>立即</em>出现<br>在光标处</h1>
+  <p class="hero-sub">
+    按住热键开始录音，松键即触发识别，结果直接插入当前焦点。<br>
+    无需切换任何应用。
+  </p>
 
-    <p class="hero-sub">
-      按住热键开始录音，松键后识别结果直接插入当前焦点，<br>
-      无需切换任何应用。
-    </p>
-
-    <!-- PILL ANIMATION -->
-    <div class="pill-demo">
-      <div class="pill">
-        <div class="pill-dot"></div>
-        <canvas id="wave" width="160" height="28"></canvas>
-        <div class="pill-label" id="pill-label">正在聆听…</div>
-      </div>
-    </div>
-
-    <!-- CTA -->
-    <div class="hero-actions">
-      <a class="btn-download" href="murmur-latest.dmg" id="dl-btn">
-        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12m0 0l-4-4m4 4l4-4"/>
-        </svg>
-        下载 Murmur
-      </a>
-      <a class="btn-secondary" href="http://192.168.230.23/luoke/murmur" target="_blank">
-        查看源码 →
-      </a>
-    </div>
-
-    <p class="build-meta" id="build-meta">loading build info…</p>
+  <!-- PILL -->
+  <div class="pill-wrap">
+    <div class="pill-dot"></div>
+    <canvas class="pill-wave" id="wave" width="120" height="22"></canvas>
+    <span class="pill-text" id="pill-label">正在聆听…</span>
   </div>
+
+  <!-- CTA -->
+  <div class="cta-row">
+    <a class="btn-dl" href="murmur-latest.dmg" id="dl-hero">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12m0 0l-4-4m4 4l4-4"/>
+      </svg>
+      下载 Murmur
+    </a>
+    <a class="btn-link" href="http://192.168.230.23/luoke/murmur" target="_blank">查看源码 →</a>
+  </div>
+  <p class="build-meta" id="build-meta">&nbsp;</p>
 </section>
+
+<div class="divider"></div>
 
 <!-- FEATURES -->
-<section class="features-section" id="features">
-  <div class="section-inner">
-    <div class="section-label reveal">特性</div>
-    <h2 class="reveal">用声音工作，<em>不打断思路</em></h2>
-
-    <div class="features-grid">
-      <div class="feature-card reveal">
-        <div class="feature-icon">🎙</div>
-        <div class="feature-title">Push-to-Talk</div>
-        <p class="feature-desc">按住热键录音，松键即触发识别，结果直接插入当前光标所在位置。</p>
-      </div>
-      <div class="feature-card reveal">
-        <div class="feature-icon">〰</div>
-        <div class="feature-title">Siri 风格波形</div>
-        <p class="feature-desc">录音期间浮窗显示 60fps 平滑波形动画，不抢焦点，不遮挡内容。</p>
-      </div>
-      <div class="feature-card reveal">
-        <div class="feature-icon">✦</div>
-        <div class="feature-title">LLM 归整</div>
-        <p class="feature-desc">可选接入 OpenAI 兼容 API，自动去语气词、修正同音错字、整理标点。</p>
-      </div>
-      <div class="feature-card reveal">
-        <div class="feature-icon">📋</div>
-        <div class="feature-title">历史记录</div>
-        <p class="feature-desc">所有识别结果持久化存储，支持手动修正，原文与修正版本均留档备查。</p>
-      </div>
-      <div class="feature-card reveal">
-        <div class="feature-icon">📚</div>
-        <div class="feature-title">智能热词库</div>
-        <p class="feature-desc">同步火山引擎自学习平台，AI 从历史修正中自动提取专有名词建议。</p>
-      </div>
-      <div class="feature-card reveal">
-        <div class="feature-icon">⌨</div>
-        <div class="feature-title">全热键支持</div>
-        <p class="feature-desc">Option、Control、CapsLock、F13–F15 及鼠标侧键均可配置为录音触发键。</p>
-      </div>
+<section class="features" id="features">
+  <div class="section-label">功能特性</div>
+  <div class="features-grid">
+    <div class="feature r">
+      <div class="feature-num">01</div>
+      <div class="feature-title">Push-to-Talk</div>
+      <p class="feature-desc">按住热键录音，松键即触发识别，结果直接插入当前光标所在位置，无需切换。</p>
+    </div>
+    <div class="feature r">
+      <div class="feature-num">02</div>
+      <div class="feature-title">波形浮窗</div>
+      <p class="feature-desc">录音期间显示平滑波形动画，不抢焦点，不遮挡内容，60fps 流畅渲染。</p>
+    </div>
+    <div class="feature r">
+      <div class="feature-num">03</div>
+      <div class="feature-title">LLM 归整</div>
+      <p class="feature-desc">可选接入 OpenAI 兼容 API，自动去语气词、修正同音错字、整理标点符号。</p>
+    </div>
+    <div class="feature r">
+      <div class="feature-num">04</div>
+      <div class="feature-title">历史记录</div>
+      <p class="feature-desc">所有识别结果持久化，支持手动修正，原文与修正版本均保留，供 AI 参考。</p>
+    </div>
+    <div class="feature r">
+      <div class="feature-num">05</div>
+      <div class="feature-title">智能热词</div>
+      <p class="feature-desc">同步火山引擎自学习平台，AI 从历史修正中自动提取专有名词建议词表。</p>
+    </div>
+    <div class="feature r">
+      <div class="feature-num">06</div>
+      <div class="feature-title">全热键支持</div>
+      <p class="feature-desc">Option、Control、CapsLock、F13–F15 及鼠标侧键均可配置为录音触发键。</p>
     </div>
   </div>
 </section>
 
-<!-- HOW IT WORKS -->
-<section id="how">
-  <div class="section-inner">
-    <div class="section-label reveal">使用流程</div>
-    <h2 class="reveal">三步开始<em>语音输入</em></h2>
-
+<!-- HOW -->
+<section class="how" id="how">
+  <div class="how-inner">
+    <div class="section-label r">使用方法</div>
     <div class="steps">
-      <div class="step reveal">
-        <div class="step-num">01</div>
+      <div class="step r">
+        <div class="step-num">STEP 01</div>
         <div class="step-title">配置凭证</div>
-        <p class="step-desc">点击菜单栏图标 → 设置，填写火山引擎 BigASR 的 App ID 与 Access Token。LLM 归整和热词管理均为可选项。</p>
+        <p class="step-desc">点击菜单栏图标 → 设置，填写火山引擎 BigASR 的 App ID 与 Access Token。LLM 归整为可选项。</p>
       </div>
-      <div class="step reveal">
-        <div class="step-num">02</div>
+      <div class="step r">
+        <div class="step-num">STEP 02</div>
         <div class="step-title">授予权限</div>
-        <p class="step-desc">系统设置 → 隐私与安全 → 辅助功能，将 Murmur 加入允许列表。用于热键监听与文字插入。</p>
+        <p class="step-desc">系统设置 → 隐私与安全 → 辅助功能，将 Murmur 加入允许列表，用于热键监听与文字插入。</p>
       </div>
-      <div class="step reveal">
-        <div class="step-num">03</div>
+      <div class="step r">
+        <div class="step-num">STEP 03</div>
         <div class="step-title">按住说话</div>
-        <p class="step-desc">将光标放在任意文本框，按住 <span class="step-key">⌥ Right Option</span>，说话，松开。识别文字直接出现在光标位置。</p>
+        <p class="step-desc">光标放在任意文本框，按住 <kbd class="kbd">⌥ Right Option</kbd>，说话，松开——识别文字直接出现。</p>
       </div>
     </div>
   </div>
 </section>
 
 <!-- DOWNLOAD -->
-<section class="download-section" id="download">
-  <div class="section-inner">
-    <div class="download-card reveal">
-      <div class="section-label">免费开源</div>
-      <h2>下载 <em>Murmur</em></h2>
-      <p>macOS 14 Sonoma 或更高版本。解压即用，无需安装。</p>
-
-      <div class="hero-actions">
-        <a class="btn-download" href="murmur-latest.dmg" id="dl-btn-2">
-          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+<section id="download">
+  <div class="download">
+    <div class="dl-left r">
+      <h2>免费下载，<br>开源使用</h2>
+      <p>macOS 14 Sonoma 或更高版本。解压 DMG，拖入 Applications 即可运行。</p>
+      <div class="cta-row">
+        <a class="btn-dl" href="murmur-latest.dmg">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12m0 0l-4-4m4 4l4-4"/>
           </svg>
           下载最新版本
         </a>
       </div>
-
-      <div class="req-tags">
-        <span class="req-tag">macOS 14+</span>
-        <span class="req-tag">Apple Silicon / Intel</span>
-        <span class="req-tag">火山引擎 BigASR 账号</span>
-        <span class="req-tag">辅助功能权限</span>
-      </div>
+    </div>
+    <div class="dl-right r">
+      <ul class="req-list">
+        <li>macOS 14 Sonoma 或更高版本</li>
+        <li>Apple Silicon 或 Intel Mac</li>
+        <li>火山引擎 BigASR 账号</li>
+        <li>辅助功能权限</li>
+        <li>麦克风权限</li>
+      </ul>
     </div>
   </div>
 </section>
 
 <!-- FOOTER -->
 <footer>
-  <a class="footer-brand" href="#">Murmur</a>
-  <ul class="footer-links">
-    <li><a href="CHANGELOG.md" target="_blank">Changelog</a></li>
-    <li><a href="LICENSE" target="_blank">MIT License</a></li>
-  </ul>
-  <p class="footer-copy">© 2026 locke</p>
+  <div class="footer-inner">
+    <a class="footer-brand" href="#">Murmur</a>
+    <ul class="footer-links">
+      <li><a href="CHANGELOG.md" target="_blank">Changelog</a></li>
+      <li><a href="LICENSE" target="_blank">MIT License</a></li>
+      <li><a href="http://192.168.230.23/luoke/murmur" target="_blank">GitLab</a></li>
+    </ul>
+    <span class="footer-copy">© 2026 locke</span>
+  </div>
 </footer>
 
 <script>
-  // ── Wave animation ────────────────────────────────────────────
-  (function() {
-    const canvas = document.getElementById('wave');
-    const ctx = canvas.getContext('2d');
-    const W = canvas.width, H = canvas.height;
-    const ACCENT = '#4fa3ef';
-
-    let t = 0;
-    let smoothAmp = 0.3;
-
-    const phases = [0, Math.PI * 0.5, Math.PI * 1.1, Math.PI * 1.7];
-    const freqs  = [1.8, 2.4, 3.1, 1.3];
-    const amps   = [0.55, 0.35, 0.20, 0.15];
+  // ── Wave ─────────────────────────────────────────────────────
+  (function () {
+    const c = document.getElementById('wave');
+    const ctx = c.getContext('2d');
+    const W = c.width, H = c.height;
+    let t = 0, amp = 0.2;
 
     function draw() {
       ctx.clearRect(0, 0, W, H);
-
-      // Fake volume: slowly oscillating
-      const targetAmp = 0.25 + 0.45 * Math.abs(Math.sin(t * 0.5));
-      smoothAmp += (targetAmp - smoothAmp) * 0.06;
+      const target = 0.2 + 0.55 * Math.abs(Math.sin(t * 0.45));
+      amp += (target - amp) * 0.05;
 
       ctx.beginPath();
       for (let x = 0; x <= W; x++) {
-        const px = x / W;
-        let y = 0;
-        for (let i = 0; i < phases.length; i++) {
-          y += amps[i] * Math.sin(freqs[i] * Math.PI * 2 * px + t * 2.5 + phases[i]);
-        }
-        y *= smoothAmp * (H * 0.38);
-        const screenY = H / 2 + y;
-        if (x === 0) ctx.moveTo(x, screenY);
-        else ctx.lineTo(x, screenY);
+        const p = x / W;
+        let y = Math.sin(p * Math.PI * 3.2 + t * 2.8) * 0.55
+              + Math.sin(p * Math.PI * 5.7 + t * 1.9) * 0.30
+              + Math.sin(p * Math.PI * 1.8 + t * 3.4) * 0.15;
+        y *= amp * H * 0.42;
+        x === 0 ? ctx.moveTo(x, H / 2 + y) : ctx.lineTo(x, H / 2 + y);
       }
-
-      ctx.strokeStyle = ACCENT;
+      ctx.strokeStyle = '#b07848';
       ctx.lineWidth = 1.5;
-      ctx.shadowColor = ACCENT;
-      ctx.shadowBlur = 6;
       ctx.stroke();
-      ctx.shadowBlur = 0;
-
       t += 0.016;
       requestAnimationFrame(draw);
     }
     draw();
 
-    // Cycle pill label
-    const labels = ['正在聆听…', '处理中…', '会议纪要今天三点', 'LLM 归整中…', '已插入 ✓'];
-    const label = document.getElementById('pill-label');
-    let li = 0;
+    const labels = ['正在聆听…', '处理中…', '会议纪要今天三点', 'LLM 归整中…', '已插入'];
+    const el = document.getElementById('pill-label');
+    let i = 0;
     setInterval(() => {
-      li = (li + 1) % labels.length;
-      label.style.opacity = '0';
-      setTimeout(() => {
-        label.textContent = labels[li];
-        label.style.opacity = '1';
-        label.style.transition = 'opacity 0.3s';
-      }, 200);
-    }, 2400);
+      i = (i + 1) % labels.length;
+      el.style.opacity = '0';
+      setTimeout(() => { el.textContent = labels[i]; el.style.opacity = '1';
+        el.style.transition = 'opacity 0.25s'; }, 180);
+    }, 2600);
   })();
 
-  // ── Build meta from latest.json ───────────────────────────────
+  // ── Build meta ────────────────────────────────────────────────
   fetch('latest.json')
     .then(r => r.json())
     .then(d => {
-      const meta = document.getElementById('build-meta');
-      meta.innerHTML = `构建 <span>#${d.sha}</span> · <span>${d.date}</span>`;
+      document.getElementById('build-meta').innerHTML =
+        `构建 <b>${d.sha}</b> · <b>${d.date}</b>`;
     })
-    .catch(() => {
-      document.getElementById('build-meta').textContent = '';
-    });
+    .catch(() => {});
 
   // ── Scroll reveal ─────────────────────────────────────────────
-  const observer = new IntersectionObserver(entries => {
-    entries.forEach(e => {
+  const io = new IntersectionObserver(entries => {
+    entries.forEach((e, idx) => {
       if (e.isIntersecting) {
-        e.target.classList.add('visible');
-        observer.unobserve(e.target);
+        e.target.style.transitionDelay = (idx * 0.06) + 's';
+        e.target.classList.add('on');
+        io.unobserve(e.target);
       }
     });
-  }, { threshold: 0.12 });
+  }, { threshold: 0.1 });
 
-  document.querySelectorAll('.reveal').forEach((el, i) => {
-    el.style.transitionDelay = `${(i % 6) * 0.07}s`;
-    observer.observe(el);
-  });
+  document.querySelectorAll('.r').forEach(el => io.observe(el));
 </script>
 </body>
 </html>
