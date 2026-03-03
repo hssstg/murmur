@@ -2,7 +2,7 @@ import AVFoundation
 import CoreAudio
 
 public class AudioCapture {
-    private let engine = AVAudioEngine()
+    private var engine: AVAudioEngine?
     private var converter: AVAudioConverter?
     private let targetFormat: AVAudioFormat
 
@@ -26,7 +26,11 @@ public class AudioCapture {
             setDefaultInputDevice(uid: targetUID)
         }
 
-        let inputNode = engine.inputNode
+        // Create a fresh engine on every start — AVAudioEngine cannot reliably restart after stop()
+        let eng = AVAudioEngine()
+        engine = eng
+
+        let inputNode = eng.inputNode
         let hwFormat = inputNode.inputFormat(forBus: 0)
 
         converter = AVAudioConverter(from: hwFormat, to: targetFormat)
@@ -35,7 +39,7 @@ public class AudioCapture {
             self?.processTap(buffer: buffer)
         }
 
-        try engine.start()
+        try eng.start()
         isRunning = true
 
         let name = Self.currentInputDeviceName()
@@ -45,8 +49,9 @@ public class AudioCapture {
 
     public func stop() {
         guard isRunning else { return }
-        engine.inputNode.removeTap(onBus: 0)
-        engine.stop()
+        engine?.inputNode.removeTap(onBus: 0)
+        engine?.stop()
+        engine = nil
         isRunning = false
     }
 
