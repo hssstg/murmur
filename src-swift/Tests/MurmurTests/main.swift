@@ -91,6 +91,10 @@ runGzipUtilsTests()
 
 runVolcengineProtocolTests()
 
+// MARK: - PushToTalk Tests
+
+runPushToTalkTests()
+
 // MARK: - Results
 
 print("\nResults: \(passed) passed, \(failed) failed")

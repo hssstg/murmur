@@ -1,6 +1,6 @@
 import Foundation
 
-public class VolcengineClient: NSObject {
+public class VolcengineClient: NSObject, @unchecked Sendable {
     private let config: VolcengineConfig
     private var webSocket: URLSessionWebSocketTask?
     private var session: URLSession?

@@ -1,6 +1,6 @@
 import Foundation
 
-public struct AppConfig: Codable {
+public struct AppConfig: Codable, Sendable {
     public var api_app_id: String
     public var api_access_token: String
     public var api_resource_id: String
