@@ -2,10 +2,19 @@ import SwiftUI
 import MurmurCore
 
 enum TimeFilter: String, CaseIterable {
-    case today  = "今天"
-    case week   = "7天"
-    case month  = "30天"
-    case all    = "全部"
+    case today  = "today"
+    case week   = "week"
+    case month  = "month"
+    case all    = "all"
+
+    var displayName: LocalizedStringKey {
+        switch self {
+        case .today: "history.filter.today"
+        case .week:  "history.filter.week"
+        case .month: "history.filter.month"
+        case .all:   "history.filter.all"
+        }
+    }
 
     func startDate() -> Date? {
         let cal = Calendar.current
@@ -45,7 +54,7 @@ struct HistoryView: View {
             // Filter + clear
             HStack {
                 Picker("", selection: $filter) {
-                    ForEach(TimeFilter.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                    ForEach(TimeFilter.allCases, id: \.self) { Text($0.displayName).tag($0) }
                 }
                 .pickerStyle(.segmented)
                 .frame(maxWidth: 280)
@@ -53,19 +62,20 @@ struct HistoryView: View {
                 Button(role: .destructive) { showClearConfirm = true } label: {
                     Image(systemName: "trash")
                 }
-                .help("清空历史")
-                .confirmationDialog("清空所有历史记录？", isPresented: $showClearConfirm) {
-                    Button("清空", role: .destructive) { store.clear() }
+                .help("history.clear.help")
+                .confirmationDialog("history.clear.confirm", isPresented: $showClearConfirm) {
+                    Button("history.clear.action", role: .destructive) { store.clear() }
                 }
             }
             .padding(.horizontal).padding(.vertical, 10)
 
             // Stats
             HStack(spacing: 20) {
-                statItem(icon: "text.bubble",            value: "\(filtered.count)", label: "条记录")
-                statItem(icon: "character.cursor.ibeam", value: "\(totalChars)",     label: "字")
+                statItem(icon: "text.bubble",            value: "\(filtered.count)", label: "history.stat.entries")
+                statItem(icon: "character.cursor.ibeam", value: "\(totalChars)",     label: "history.stat.chars")
                 if let (day, count) = mostActiveDay {
-                    statItem(icon: "flame", value: day, label: "最多 \(count) 条")
+                    statItem(icon: "flame", value: day,
+                             label: LocalizedStringKey(String(format: String(localized: "history.stat.most_active"), count)))
                 }
                 Spacer()
             }
@@ -79,7 +89,7 @@ struct HistoryView: View {
                     VStack(spacing: 8) {
                         Image(systemName: "clock.badge.questionmark")
                             .font(.system(size: 36)).foregroundStyle(.tertiary)
-                        Text("暂无记录").foregroundStyle(.secondary)
+                        Text("history.empty").foregroundStyle(.secondary)
                     }
                     Spacer() }
                 Spacer()
@@ -100,7 +110,7 @@ struct HistoryView: View {
     }
 
     @ViewBuilder
-    private func statItem(icon: String, value: String, label: String) -> some View {
+    private func statItem(icon: String, value: String, label: LocalizedStringKey) -> some View {
         HStack(spacing: 4) {
             Image(systemName: icon).foregroundStyle(.secondary)
             Text(value).fontWeight(.medium)
@@ -129,7 +139,7 @@ private struct HistoryRowView: View {
 
                 if entry.edited != nil {
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text("原")
+                        Text("history.entry.original_label")
                             .font(.caption2)
                             .padding(.horizontal, 4).padding(.vertical, 1)
                             .background(.secondary.opacity(0.15))
@@ -157,7 +167,7 @@ private struct HistoryRowView: View {
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
-            .help("修改")
+            .help("history.entry.edit.help")
             .popover(isPresented: $showPopover, arrowEdge: .trailing) {
                 EditPopover(
                     text: $editingText,
@@ -180,7 +190,7 @@ private struct EditPopover: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("编辑记录")
+            Text("history.editpopover.title")
                 .font(.headline)
 
             TextEditor(text: $text)
@@ -192,9 +202,9 @@ private struct EditPopover: View {
 
             HStack {
                 Spacer()
-                Button("取消", action: onCancel)
+                Button("common.cancel", action: onCancel)
                     .keyboardShortcut(.cancelAction)
-                Button("保存", action: onCommit)
+                Button("common.save", action: onCommit)
                     .keyboardShortcut(.defaultAction)
                     .buttonStyle(.borderedProminent)
             }
