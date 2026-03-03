@@ -83,6 +83,10 @@ suite("testMicrophoneNullAndSome") {
     assertEqual(cfgSome.microphone, "DJI Mic Mini", "microphone some -> value")
 }
 
+// MARK: - GzipUtils Tests
+
+runGzipUtilsTests()
+
 // MARK: - Results
 
 print("\nResults: \(passed) passed, \(failed) failed")
