@@ -3,12 +3,14 @@ import PackageDescription
 
 let package = Package(
     name: "murmur",
+    defaultLocalization: "zh-Hans",
     platforms: [.macOS(.v14)],
     targets: [
         .executableTarget(
             name: "murmur",
             dependencies: ["MurmurCore"],
-            path: "Sources/App"
+            path: "Sources/App",
+            resources: [.process("Resources")]
         ),
         .target(
             name: "MurmurCore",

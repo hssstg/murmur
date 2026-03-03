@@ -1,0 +1,101 @@
+/* common */
+"common.cancel" = "Cancel";
+"common.save" = "Save";
+"common.saved" = "Saved ✓";
+"common.disabled" = "Disabled";
+"common.system_default" = "System Default";
+"common.no_data" = "No data";
+
+/* menu */
+"menu.history" = "History...";
+"menu.hotwords" = "Hot Words...";
+"menu.stats" = "Statistics...";
+"menu.settings" = "Settings...";
+"menu.quit" = "Quit";
+
+/* windows */
+"window.history.title" = "Murmur History";
+"window.hotwords.title" = "Murmur Hot Words";
+"window.stats.title" = "Murmur Statistics";
+"window.settings.title" = "Murmur Settings";
+
+/* settings */
+"settings.asr.section" = "Volcengine ASR";
+"settings.asr.footer" = "Get credentials at speech.volcengine.com";
+"settings.asr.appid.help" = "Volcengine Console → Speech → App Management → AppID";
+"settings.asr.token.help" = "Volcengine Console → Speech → App Management → Access Token";
+"settings.asr.resourceid.help" = "Default: volc.bigasr.sauc.duration";
+"settings.hotkey.section" = "Shortcuts";
+"settings.hotkey.label" = "Hotkey";
+"settings.mouseenter.label" = "Mouse Enter";
+"settings.asr2.section" = "Speech Recognition";
+"settings.asr.language" = "Language";
+"settings.asr.punc" = "Punctuation";
+"settings.asr.itn" = "Number Conversion (ITN)";
+"settings.asr.ddc" = "Disfluency Removal (DDC)";
+"settings.asr.vocabulary" = "Hot Word Table";
+"settings.llm.section" = "LLM Configuration";
+"settings.llm.model" = "Model";
+"settings.llm.baseurl.help" = "OpenAI-compatible endpoint, e.g. https://api.openai.com/";
+"settings.llm.model.help" = "Model name, e.g. gpt-4o, glm-4-flash";
+"settings.llmpolish.section" = "LLM Polish";
+"settings.llmpolish.enable" = "Polish transcription with LLM";
+"settings.hotwords.section" = "Hot Word Credentials (Volcengine)";
+"settings.mic.section" = "Microphone";
+"settings.mic.label" = "Microphone";
+
+/* history */
+"history.filter.today" = "Today";
+"history.filter.week" = "7 Days";
+"history.filter.month" = "30 Days";
+"history.filter.all" = "All";
+"history.stat.entries" = "entries";
+"history.stat.chars" = "chars";
+"history.stat.most_active" = "%d entries";
+"history.clear.help" = "Clear history";
+"history.clear.confirm" = "Clear all history?";
+"history.clear.action" = "Clear";
+"history.empty" = "No records";
+"history.entry.original_label" = "Orig";
+"history.entry.edit.help" = "Edit";
+"history.editpopover.title" = "Edit Entry";
+
+/* hotwords */
+"hotwords.add.placeholder" = "Add hot word...";
+"hotwords.add.button" = "Add";
+"hotwords.fetching" = "Loading from Volcengine...";
+"hotwords.empty" = "No hot words";
+"hotwords.suggestions.title" = "AI Suggested Words";
+"hotwords.suggestions.addall" = "Add All";
+"hotwords.suggestions.add.help" = "Add to hot words";
+"hotwords.suggestions.dismiss.help" = "Dismiss";
+"hotwords.count" = "%d hot words";
+"hotwords.extract.button" = "AI Extract Words";
+"hotwords.sync.button" = "Sync to Volcengine";
+"hotwords.extract.help.nollm" = "Configure LLM in Settings first";
+"hotwords.extract.help" = "Extract hot words from edit history using AI";
+"hotwords.sync.help.nocreds" = "Fill in Hot Word AK/SK in Settings first";
+"hotwords.sync.help" = "Upload word list to Volcengine";
+"hotwords.fetch.nolist" = "Word list not found (never synced)";
+"hotwords.fetch.success" = "Loaded %d words from Volcengine";
+"hotwords.fetch.error" = "Load failed: %@";
+"hotwords.sync.error" = "Failed: %@";
+"hotwords.extract.nohistory" = "No history available";
+"hotwords.extract.nowords" = "No new hot words found";
+"hotwords.extract.error" = "Extraction failed: %@";
+
+/* stats */
+"stats.total_sessions" = "Total Sessions";
+"stats.total_chars" = "Total Chars";
+"stats.days_used" = "Days Used";
+"stats.edit_rate" = "Edit Rate";
+"stats.daily.title" = "Last 30 Days";
+"stats.hourly.title" = "Hourly Distribution (24h)";
+"stats.quality.title" = "Recognition Quality";
+"stats.quality.direct" = "Accepted";
+"stats.quality.edited" = "Manually Edited";
+"stats.quality.avg_chars" = "Avg Chars/Entry";
+"stats.chart.date_axis" = "Date";
+"stats.chart.count_axis" = "Count";
+"stats.chart.hour_axis" = "Hour";
+"stats.chart.hour_label" = "%dh";

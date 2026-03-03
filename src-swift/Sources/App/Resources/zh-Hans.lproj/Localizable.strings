@@ -1,0 +1,101 @@
+/* common */
+"common.cancel" = "取消";
+"common.save" = "保存";
+"common.saved" = "已保存 ✓";
+"common.disabled" = "禁用";
+"common.system_default" = "系统默认";
+"common.no_data" = "暂无数据";
+
+/* menu */
+"menu.history" = "历史记录...";
+"menu.hotwords" = "热词库...";
+"menu.stats" = "使用统计...";
+"menu.settings" = "设置...";
+"menu.quit" = "退出";
+
+/* windows */
+"window.history.title" = "Murmur 历史记录";
+"window.hotwords.title" = "Murmur 热词库";
+"window.stats.title" = "Murmur 使用统计";
+"window.settings.title" = "Murmur 设置";
+
+/* settings */
+"settings.asr.section" = "火山引擎 ASR";
+"settings.asr.footer" = "凭证在火山引擎控制台 speech.volcengine.com 获取";
+"settings.asr.appid.help" = "火山引擎控制台 → 语音技术 → 应用管理 → AppID";
+"settings.asr.token.help" = "火山引擎控制台 → 语音技术 → 应用管理 → Access Token";
+"settings.asr.resourceid.help" = "默认：volc.bigasr.sauc.duration";
+"settings.hotkey.section" = "快捷键";
+"settings.hotkey.label" = "热键";
+"settings.mouseenter.label" = "鼠标 Enter";
+"settings.asr2.section" = "语音识别";
+"settings.asr.language" = "语言";
+"settings.asr.punc" = "标点符号";
+"settings.asr.itn" = "数字转换 (ITN)";
+"settings.asr.ddc" = "顺滑处理 (DDC)";
+"settings.asr.vocabulary" = "热词表名";
+"settings.llm.section" = "大模型配置";
+"settings.llm.model" = "模型";
+"settings.llm.baseurl.help" = "OpenAI 兼容接口地址，如 https://api.openai.com/";
+"settings.llm.model.help" = "模型名称，如 gpt-4o、glm-4-flash";
+"settings.llmpolish.section" = "LLM 润色";
+"settings.llmpolish.enable" = "启用语音转写后自动润色";
+"settings.hotwords.section" = "热词凭证（火山自学习平台）";
+"settings.mic.section" = "麦克风";
+"settings.mic.label" = "麦克风";
+
+/* history */
+"history.filter.today" = "今天";
+"history.filter.week" = "7天";
+"history.filter.month" = "30天";
+"history.filter.all" = "全部";
+"history.stat.entries" = "条记录";
+"history.stat.chars" = "字";
+"history.stat.most_active" = "最多 %d 条";
+"history.clear.help" = "清空历史";
+"history.clear.confirm" = "清空所有历史记录？";
+"history.clear.action" = "清空";
+"history.empty" = "暂无记录";
+"history.entry.original_label" = "原";
+"history.entry.edit.help" = "修改";
+"history.editpopover.title" = "编辑记录";
+
+/* hotwords */
+"hotwords.add.placeholder" = "添加热词...";
+"hotwords.add.button" = "添加";
+"hotwords.fetching" = "从火山引擎加载中...";
+"hotwords.empty" = "暂无热词";
+"hotwords.suggestions.title" = "AI 建议热词";
+"hotwords.suggestions.addall" = "全部添加";
+"hotwords.suggestions.add.help" = "添加到热词库";
+"hotwords.suggestions.dismiss.help" = "忽略";
+"hotwords.count" = "%d 个热词";
+"hotwords.extract.button" = "AI 提取热词";
+"hotwords.sync.button" = "同步到火山引擎";
+"hotwords.extract.help.nollm" = "请先在设置中配置大模型";
+"hotwords.extract.help" = "根据历史修正记录 AI 提取热词";
+"hotwords.sync.help.nocreds" = "请先在设置中填写热词 AK/SK";
+"hotwords.sync.help" = "上传词表到火山引擎自学习平台";
+"hotwords.fetch.nolist" = "词表不存在（未同步过）";
+"hotwords.fetch.success" = "已从火山加载 %d 个词";
+"hotwords.fetch.error" = "加载失败：%@";
+"hotwords.sync.error" = "失败：%@";
+"hotwords.extract.nohistory" = "暂无历史记录";
+"hotwords.extract.nowords" = "未发现新热词";
+"hotwords.extract.error" = "提取失败：%@";
+
+/* stats */
+"stats.total_sessions" = "总记录";
+"stats.total_chars" = "总字数";
+"stats.days_used" = "使用天数";
+"stats.edit_rate" = "修正率";
+"stats.daily.title" = "最近 30 天用量";
+"stats.hourly.title" = "时段分布（24 小时）";
+"stats.quality.title" = "识别质量";
+"stats.quality.direct" = "直接采用";
+"stats.quality.edited" = "已人工修正";
+"stats.quality.avg_chars" = "平均字数/条";
+"stats.chart.date_axis" = "日期";
+"stats.chart.count_axis" = "次数";
+"stats.chart.hour_axis" = "小时";
+"stats.chart.hour_label" = "%d时";
