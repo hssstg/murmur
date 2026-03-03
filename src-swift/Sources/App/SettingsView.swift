@@ -87,22 +87,25 @@ struct SettingsView: View {
                 TextField("热词表名", text: $config.asr_vocabulary)
             }
 
-            Section("LLM 润色") {
-                Toggle("启用 LLM 润色", isOn: $config.llm_enabled)
-                if config.llm_enabled {
-                    TextField("Base URL", text: $config.llm_base_url)
-                    TextField("模型", text: $config.llm_model)
-                    HStack {
-                        if showLlmKey {
-                            TextField("API Key", text: $config.llm_api_key)
-                        } else {
-                            SecureField("API Key", text: $config.llm_api_key)
-                        }
-                        Button { showLlmKey.toggle() } label: {
-                            Image(systemName: showLlmKey ? "eye.slash" : "eye")
-                        }.buttonStyle(.plain)
+            Section("大模型配置") {
+                TextField("Base URL", text: $config.llm_base_url)
+                    .help("OpenAI 兼容接口地址，如 https://api.openai.com/")
+                TextField("模型", text: $config.llm_model)
+                    .help("模型名称，如 gpt-4o、glm-4-flash")
+                HStack {
+                    if showLlmKey {
+                        TextField("API Key", text: $config.llm_api_key)
+                    } else {
+                        SecureField("API Key", text: $config.llm_api_key)
                     }
+                    Button { showLlmKey.toggle() } label: {
+                        Image(systemName: showLlmKey ? "eye.slash" : "eye")
+                    }.buttonStyle(.plain)
                 }
+            }
+
+            Section("LLM 润色") {
+                Toggle("启用语音转写后自动润色", isOn: $config.llm_enabled)
             }
 
             Section("热词凭证（火山自学习平台）") {
