@@ -1,21 +1,60 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Murmur — macOS 语音输入</title>
+
+  <!-- Primary SEO -->
+  <title>Murmur — Free Voice Dictation for Mac | Open-Source Push-to-Talk</title>
+  <meta name="description" content="Murmur is a free, open-source voice dictation app for macOS. Hold a hotkey to speak, release to type — text appears instantly at your cursor. No subscription. No cloud. Works everywhere.">
+  <meta name="keywords" content="free voice dictation mac, push to talk mac, speech to text mac free, typeless alternative, voice typing mac, open source dictation mac, macOS voice input, free dictation software mac, murmur voice typing">
+  <link rel="canonical" href="https://murmurtype.com/">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://murmurtype.com/">
+  <meta property="og:title" content="Murmur — Free Voice Dictation for Mac">
+  <meta property="og:description" content="Hold a key, speak, release — text appears at your cursor. Free & open-source push-to-talk dictation for macOS. No subscription required.">
+  <meta property="og:image" content="https://murmurtype.com/og.png">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Murmur — Free Voice Dictation for Mac">
+  <meta name="twitter:description" content="Free, open-source push-to-talk dictation for macOS. No subscription. Text appears instantly at your cursor.">
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Murmur",
+    "operatingSystem": "macOS",
+    "applicationCategory": "UtilitiesApplication",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "description": "Free, open-source push-to-talk voice dictation for macOS. Hold a hotkey to speak, release to type — text appears instantly at your cursor.",
+    "url": "https://murmurtype.com",
+    "downloadUrl": "https://murmurtype.com/murmur-latest.dmg",
+    "softwareVersion": "0.2.0",
+    "license": "https://murmurtype.com/LICENSE"
+  }
+  </script>
+
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --white:   #ffffff;
-      --off:     #fafaf8;
-      --ink:     #111111;
-      --ink-2:   #555555;
-      --ink-3:   #999999;
-      --line:    #e8e8e4;
-      --accent:  #b07848;   /* warm amber, low-sat */
-      --sans:    -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+      --white:  #ffffff;
+      --off:    #fafaf8;
+      --ink:    #111111;
+      --ink-2:  #555555;
+      --ink-3:  #999999;
+      --line:   #e8e8e4;
+      --accent: #b07848;
+      --sans:   -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
     }
 
     html { scroll-behavior: smooth; }
@@ -56,6 +95,7 @@
       display: flex;
       gap: 32px;
       list-style: none;
+      align-items: center;
     }
 
     .nav-links a {
@@ -67,52 +107,69 @@
 
     .nav-links a:hover { color: var(--ink); }
 
-    /* ─── HERO ────────────────────────────────────────────── */
+    .nav-dl {
+      background: var(--ink) !important;
+      color: var(--white) !important;
+      padding: 7px 16px;
+      border-radius: 6px;
+      font-weight: 500 !important;
+    }
+
+    .nav-dl:hover { background: #2a2a2a !important; }
+
+    /* ─── HERO ─────────────────────────────────────────────── */
     .hero {
-      padding: 160px 48px 120px;
+      padding: 148px 48px 100px;
       max-width: 1080px;
       margin: 0 auto;
     }
 
-    .hero-eyebrow {
+    .hero-badge {
       display: inline-flex;
       align-items: center;
       gap: 8px;
       font-size: 12px;
       font-weight: 500;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--accent);
       margin-bottom: 32px;
     }
 
-    .hero-eyebrow::before {
+    .hero-badge::before {
       content: '';
       display: block;
-      width: 20px;
-      height: 1px;
+      width: 20px; height: 1px;
       background: var(--accent);
     }
 
     h1 {
-      font-size: clamp(52px, 7.5vw, 100px);
+      font-size: clamp(52px, 7.5vw, 96px);
       font-weight: 200;
       line-height: 1.04;
       letter-spacing: -0.035em;
       color: var(--ink);
-      margin-bottom: 36px;
+      margin-bottom: 32px;
     }
 
     .hero-sub {
-      font-size: 17px;
+      font-size: 18px;
       font-weight: 300;
       color: var(--ink-2);
       line-height: 1.75;
-      max-width: 480px;
-      margin-bottom: 56px;
+      max-width: 520px;
+      margin-bottom: 16px;
     }
 
-    /* Pill demo */
+    .hero-free {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--accent);
+      margin-bottom: 48px;
+      letter-spacing: 0.01em;
+    }
+
+    /* Pill */
     .pill-wrap {
       display: inline-flex;
       align-items: center;
@@ -121,7 +178,7 @@
       border: 1px solid var(--line);
       border-radius: 100px;
       padding: 8px 18px 8px 12px;
-      margin-bottom: 56px;
+      margin-bottom: 52px;
     }
 
     .pill-dot {
@@ -134,18 +191,13 @@
 
     @keyframes dotBlink {
       0%, 100% { opacity: 1; }
-      50%       { opacity: 0.35; }
-    }
-
-    .pill-wave {
-      display: block;
+      50%       { opacity: 0.3; }
     }
 
     .pill-text {
       font-size: 13px;
       color: var(--ink-2);
-      letter-spacing: 0.01em;
-      min-width: 88px;
+      min-width: 100px;
     }
 
     /* CTA */
@@ -156,7 +208,7 @@
       flex-wrap: wrap;
     }
 
-    .btn-dl {
+    .btn-primary {
       display: inline-flex;
       align-items: center;
       gap: 8px;
@@ -165,48 +217,42 @@
       font-size: 14px;
       font-weight: 500;
       text-decoration: none;
-      padding: 12px 24px;
+      padding: 13px 24px;
       border-radius: 8px;
-      letter-spacing: -0.01em;
       transition: background 0.15s;
     }
 
-    .btn-dl:hover { background: #2a2a2a; }
+    .btn-primary:hover { background: #2a2a2a; }
 
-    .btn-link {
-      font-size: 14px;
+    .btn-ghost {
+      font-size: 13px;
       color: var(--ink-3);
       text-decoration: none;
       transition: color 0.15s;
     }
 
-    .btn-link:hover { color: var(--ink); }
+    .btn-ghost:hover { color: var(--ink-2); }
 
     .build-meta {
-      margin-top: 14px;
+      margin-top: 12px;
       font-size: 11px;
       color: var(--ink-3);
-      letter-spacing: 0.03em;
+      letter-spacing: 0.02em;
     }
 
-    .build-meta b { color: var(--ink-2); font-weight: 400; }
+    .build-meta b { font-weight: 400; color: var(--ink-2); }
 
-    /* ─── DIVIDER ────────────────────────────────────────── */
-    .divider {
+    /* ─── DIVIDER ─────────────────────────────────────────── */
+    hr {
+      border: none;
       height: 1px;
       background: var(--line);
       max-width: 1080px;
       margin: 0 auto;
     }
 
-    /* ─── FEATURES ───────────────────────────────────────── */
-    .features {
-      max-width: 1080px;
-      margin: 0 auto;
-      padding: 100px 48px;
-    }
-
-    .section-label {
+    /* ─── SECTION LABEL ───────────────────────────────────── */
+    .label {
       font-size: 11px;
       font-weight: 500;
       letter-spacing: 0.1em;
@@ -215,69 +261,130 @@
       margin-bottom: 48px;
     }
 
+    /* ─── FEATURES ────────────────────────────────────────── */
+    .features {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 96px 48px;
+    }
+
     .features-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 0;
     }
 
-    .feature {
-      padding: 40px 36px 40px 0;
+    .feat {
+      padding: 36px 32px 36px 0;
       border-right: 1px solid var(--line);
       border-bottom: 1px solid var(--line);
     }
 
-    .feature:nth-child(3n) { border-right: none; }
-    .feature:nth-child(4),
-    .feature:nth-child(5),
-    .feature:nth-child(6) { border-bottom: none; }
+    .feat:nth-child(3n)   { border-right: none; padding-right: 0; }
+    .feat:nth-child(n+4)  { border-bottom: none; }
+    .feat:not(:nth-child(3n+1)) { padding-left: 32px; }
 
-    .feature:nth-child(2),
-    .feature:nth-child(3),
-    .feature:nth-child(5),
-    .feature:nth-child(6) { padding-left: 36px; }
-
-    .feature-num {
+    .feat-num {
       font-size: 11px;
       color: var(--accent);
       font-weight: 500;
       letter-spacing: 0.08em;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
 
-    .feature-title {
-      font-size: 16px;
+    .feat h3 {
+      font-size: 15px;
       font-weight: 400;
       letter-spacing: -0.01em;
       color: var(--ink);
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
-    .feature-desc {
+    .feat p {
       font-size: 13px;
       font-weight: 300;
       color: var(--ink-2);
       line-height: 1.7;
     }
 
-    /* ─── HOW ────────────────────────────────────────────── */
-    .how {
+    /* ─── COMPARISON ──────────────────────────────────────── */
+    .comparison-section {
       background: var(--off);
       border-top: 1px solid var(--line);
       border-bottom: 1px solid var(--line);
     }
 
-    .how-inner {
+    .comparison-inner {
       max-width: 1080px;
       margin: 0 auto;
-      padding: 100px 48px;
+      padding: 96px 48px;
+    }
+
+    .comparison-inner h2 {
+      font-size: clamp(28px, 3.5vw, 48px);
+      font-weight: 200;
+      letter-spacing: -0.03em;
+      margin-bottom: 12px;
+    }
+
+    .comparison-inner .sub {
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--ink-2);
+      margin-bottom: 56px;
+    }
+
+    .comp-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .comp-table th,
+    .comp-table td {
+      padding: 14px 20px;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+      font-weight: 300;
+    }
+
+    .comp-table th {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      background: var(--white);
+    }
+
+    .comp-table th:first-child { border-radius: 8px 0 0 0; }
+    .comp-table th:last-child  { border-radius: 0 8px 0 0; }
+
+    .comp-table td:first-child { color: var(--ink-2); }
+
+    .col-murmur { color: var(--ink) !important; font-weight: 400 !important; }
+    .col-other  { color: var(--ink-3) !important; }
+
+    .check { color: #2a9a5a; font-weight: 500; }
+    .cross { color: var(--ink-3); }
+
+    /* ─── HOW ─────────────────────────────────────────────── */
+    .how {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 96px 48px;
+    }
+
+    .how h2 {
+      font-size: clamp(28px, 3.5vw, 48px);
+      font-weight: 200;
+      letter-spacing: -0.03em;
+      margin-bottom: 64px;
     }
 
     .steps {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 64px;
-      margin-top: 64px;
+      gap: 56px;
     }
 
     .step-num {
@@ -285,18 +392,17 @@
       font-weight: 500;
       letter-spacing: 0.1em;
       color: var(--ink-3);
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
 
-    .step-title {
-      font-size: 20px;
+    .step h3 {
+      font-size: 19px;
       font-weight: 300;
       letter-spacing: -0.02em;
-      color: var(--ink);
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
-    .step-desc {
+    .step p {
       font-size: 13px;
       font-weight: 300;
       color: var(--ink-2);
@@ -306,35 +412,37 @@
     .kbd {
       display: inline-block;
       font-size: 11px;
-      font-family: -apple-system, sans-serif;
       background: var(--white);
       border: 1px solid var(--line);
       border-bottom-width: 2px;
       border-radius: 4px;
       padding: 1px 6px;
       color: var(--ink-2);
-      margin: 0 1px;
     }
 
-    /* ─── DOWNLOAD ───────────────────────────────────────── */
-    .download {
+    /* ─── DOWNLOAD ────────────────────────────────────────── */
+    .download-section {
+      background: var(--off);
+      border-top: 1px solid var(--line);
+    }
+
+    .download-inner {
       max-width: 1080px;
       margin: 0 auto;
-      padding: 120px 48px;
+      padding: 96px 48px;
       display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
       gap: 80px;
+      align-items: flex-start;
     }
 
     .dl-left { flex: 1; }
 
     .dl-left h2 {
-      font-size: clamp(36px, 4vw, 60px);
+      font-size: clamp(32px, 4vw, 56px);
       font-weight: 200;
       letter-spacing: -0.03em;
       line-height: 1.1;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
 
     .dl-left p {
@@ -342,8 +450,8 @@
       font-weight: 300;
       color: var(--ink-2);
       line-height: 1.7;
-      max-width: 380px;
-      margin-bottom: 40px;
+      max-width: 400px;
+      margin-bottom: 36px;
     }
 
     .dl-right {
@@ -375,7 +483,7 @@
       flex-shrink: 0;
     }
 
-    /* ─── FOOTER ─────────────────────────────────────────── */
+    /* ─── FOOTER ──────────────────────────────────────────── */
     footer {
       border-top: 1px solid var(--line);
     }
@@ -383,7 +491,7 @@
     .footer-inner {
       max-width: 1080px;
       margin: 0 auto;
-      padding: 36px 48px;
+      padding: 32px 48px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -413,34 +521,29 @@
 
     .footer-links a:hover { color: var(--ink-2); }
 
-    .footer-copy {
-      font-size: 12px;
-      color: var(--ink-3);
-    }
+    .footer-copy { font-size: 12px; color: var(--ink-3); }
 
-    /* ─── REVEAL ────────────────────────────────────────── */
+    /* ─── REVEAL ──────────────────────────────────────────── */
     .r {
       opacity: 0;
-      transform: translateY(18px);
-      transition: opacity 0.65s ease, transform 0.65s ease;
+      transform: translateY(16px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
     }
+    .r.on { opacity: 1; transform: none; }
 
-    .r.on {
-      opacity: 1;
-      transform: none;
-    }
-
-    /* ─── RESPONSIVE ─────────────────────────────────────── */
+    /* ─── RESPONSIVE ──────────────────────────────────────── */
     @media (max-width: 800px) {
-      nav { padding: 0 24px; }
+      nav { padding: 0 20px; }
       .nav-links { display: none; }
-      .hero, .features, .how-inner, .download { padding-left: 24px; padding-right: 24px; }
+      .hero, .features, .how, .download-inner, .comparison-inner { padding-left: 20px; padding-right: 20px; }
       .features-grid { grid-template-columns: 1fr; }
-      .feature { border-right: none !important; padding-left: 0 !important; }
-      .feature:last-child { border-bottom: none; }
-      .steps { grid-template-columns: 1fr; gap: 40px; }
-      .download { flex-direction: column; gap: 48px; }
-      h1 { font-size: 48px; }
+      .feat { border-right: none !important; padding-left: 0 !important; padding-right: 0 !important; }
+      .feat:last-child { border-bottom: none; }
+      .steps { grid-template-columns: 1fr; gap: 36px; }
+      .download-inner { flex-direction: column; gap: 40px; }
+      h1 { font-size: 46px; }
+      .comp-table { font-size: 12px; }
+      .comp-table th, .comp-table td { padding: 10px 12px; }
     }
   </style>
 </head>
@@ -448,151 +551,216 @@
 
 <!-- NAV -->
 <nav>
-  <a class="nav-logo" href="#">Murmur</a>
+  <a class="nav-logo" href="/">Murmur</a>
   <ul class="nav-links">
-    <li><a href="#features">功能</a></li>
-    <li><a href="#how">使用方法</a></li>
-    <li><a href="#download">下载</a></li>
-
+    <li><a href="#features">Features</a></li>
+    <li><a href="#compare">vs Typeless</a></li>
+    <li><a href="#how">How it works</a></li>
+    <li><a href="#download" class="nav-dl">Download Free</a></li>
   </ul>
 </nav>
 
 <!-- HERO -->
-<section class="hero">
-  <div class="hero-eyebrow">macOS 语音输入</div>
+<main>
+<section class="hero" aria-label="Hero">
+  <div class="hero-badge">Free &amp; Open Source</div>
 
-  <h1>说话，直接<br>出现在光标</h1>
+  <h1>Voice typing<br>for Mac.<br>Free.</h1>
 
   <p class="hero-sub">
-    按住热键开始录音，松键即触发识别，结果直接插入当前焦点。<br>
-    无需切换任何应用。
+    Hold a hotkey, speak, release — text appears instantly at your cursor.
+    Works in any app. No subscription, no cloud, no limits.
   </p>
 
-  <!-- PILL -->
-  <div class="pill-wrap">
+  <p class="hero-free">Free forever · Open source · macOS native</p>
+
+  <!-- Pill animation -->
+  <div class="pill-wrap" aria-hidden="true">
     <div class="pill-dot"></div>
-    <canvas class="pill-wave" id="wave" width="120" height="22"></canvas>
-    <span class="pill-text" id="pill-label">正在聆听…</span>
+    <canvas id="wave" width="120" height="22"></canvas>
+    <span class="pill-text" id="pill-label">Listening…</span>
   </div>
 
-  <!-- CTA -->
   <div class="cta-row">
-    <a class="btn-dl" href="murmur-latest.dmg" id="dl-hero">
-      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+    <a class="btn-primary" href="murmur-latest.dmg" id="dl-hero" aria-label="Download Murmur for Mac">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12m0 0l-4-4m4 4l4-4"/>
       </svg>
-      下载 Murmur
+      Download for Mac — Free
     </a>
-
+    <a class="btn-ghost" href="#compare">See how it compares →</a>
   </div>
   <p class="build-meta" id="build-meta">&nbsp;</p>
 </section>
 
-<div class="divider"></div>
+<hr>
 
 <!-- FEATURES -->
-<section class="features" id="features">
-  <div class="section-label">功能特性</div>
+<section class="features" id="features" aria-labelledby="features-heading">
+  <p class="label">Features</p>
   <div class="features-grid">
-    <div class="feature r">
-      <div class="feature-num">01</div>
-      <div class="feature-title">Push-to-Talk</div>
-      <p class="feature-desc">按住热键录音，松键即触发识别，结果直接插入当前光标所在位置，无需切换。</p>
-    </div>
-    <div class="feature r">
-      <div class="feature-num">02</div>
-      <div class="feature-title">波形浮窗</div>
-      <p class="feature-desc">录音期间显示平滑波形动画，不抢焦点，不遮挡内容，60fps 流畅渲染。</p>
-    </div>
-    <div class="feature r">
-      <div class="feature-num">03</div>
-      <div class="feature-title">LLM 归整</div>
-      <p class="feature-desc">可选接入 OpenAI 兼容 API，自动去语气词、修正同音错字、整理标点符号。</p>
-    </div>
-    <div class="feature r">
-      <div class="feature-num">04</div>
-      <div class="feature-title">历史记录</div>
-      <p class="feature-desc">所有识别结果持久化，支持手动修正，原文与修正版本均保留，供 AI 参考。</p>
-    </div>
-    <div class="feature r">
-      <div class="feature-num">05</div>
-      <div class="feature-title">智能热词</div>
-      <p class="feature-desc">同步火山引擎自学习平台，AI 从历史修正中自动提取专有名词建议词表。</p>
-    </div>
-    <div class="feature r">
-      <div class="feature-num">06</div>
-      <div class="feature-title">全热键支持</div>
-      <p class="feature-desc">Option、Control、CapsLock、F13–F15 及鼠标侧键均可配置为录音触发键。</p>
-    </div>
+    <article class="feat r">
+      <div class="feat-num">01</div>
+      <h3>Push-to-Talk</h3>
+      <p>Hold any hotkey to record, release to transcribe. Result inserts directly at your cursor — no copy-paste, no window switching.</p>
+    </article>
+    <article class="feat r">
+      <div class="feat-num">02</div>
+      <h3>Works Everywhere</h3>
+      <p>Powered by CGEventPost — text is typed character-by-character into the active app. Works in terminals, code editors, browsers, anything.</p>
+    </article>
+    <article class="feat r">
+      <div class="feat-num">03</div>
+      <h3>LLM Polish</h3>
+      <p>Optionally connect any OpenAI-compatible API to auto-remove filler words, fix homophones, and clean up punctuation after transcription.</p>
+    </article>
+    <article class="feat r">
+      <div class="feat-num">04</div>
+      <h3>History &amp; Corrections</h3>
+      <p>All transcriptions are saved locally. Edit any entry, keep both the original and corrected version — the diff feeds your hotword AI.</p>
+    </article>
+    <article class="feat r">
+      <div class="feat-num">05</div>
+      <h3>Smart Vocabulary</h3>
+      <p>AI scans your correction history and suggests domain-specific terms to add to your hotword list, improving accuracy over time.</p>
+    </article>
+    <article class="feat r">
+      <div class="feat-num">06</div>
+      <h3>Flexible Hotkeys</h3>
+      <p>Option, Control, CapsLock, F13–F15, mouse side buttons — map any key to push-to-talk. Remap a mouse button to Enter as a bonus.</p>
+    </article>
   </div>
 </section>
 
-<!-- HOW -->
-<section class="how" id="how">
-  <div class="how-inner">
-    <div class="section-label r">使用方法</div>
-    <div class="steps">
-      <div class="step r">
-        <div class="step-num">STEP 01</div>
-        <div class="step-title">配置凭证</div>
-        <p class="step-desc">点击菜单栏图标 → 设置，填写火山引擎 BigASR 的 App ID 与 Access Token。LLM 归整为可选项。</p>
-      </div>
-      <div class="step r">
-        <div class="step-num">STEP 02</div>
-        <div class="step-title">授予权限</div>
-        <p class="step-desc">系统设置 → 隐私与安全 → 辅助功能，将 Murmur 加入允许列表，用于热键监听与文字插入。</p>
-      </div>
-      <div class="step r">
-        <div class="step-num">STEP 03</div>
-        <div class="step-title">按住说话</div>
-        <p class="step-desc">光标放在任意文本框，按住 <kbd class="kbd">⌥ Right Option</kbd>，说话，松开——识别文字直接出现。</p>
-      </div>
-    </div>
+<hr>
+
+<!-- COMPARISON -->
+<section class="comparison-section" id="compare" aria-labelledby="compare-heading">
+  <div class="comparison-inner">
+    <p class="label r">Why Murmur</p>
+    <h2 class="r" id="compare-heading">Free alternative<br>to Typeless</h2>
+    <p class="sub r">Everything you need for voice dictation on Mac — without the monthly bill.</p>
+
+    <table class="comp-table r" role="table" aria-label="Murmur vs Typeless comparison">
+      <thead>
+        <tr>
+          <th scope="col">Feature</th>
+          <th scope="col">Murmur</th>
+          <th scope="col">Typeless</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Price</td>
+          <td class="col-murmur"><span class="check">Free forever</span></td>
+          <td class="col-other">Paid subscription</td>
+        </tr>
+        <tr>
+          <td>Source code</td>
+          <td class="col-murmur"><span class="check">Open source</span></td>
+          <td class="col-other"><span class="cross">Closed source</span></td>
+        </tr>
+        <tr>
+          <td>macOS app</td>
+          <td class="col-murmur"><span class="check">Native Swift + AppKit</span></td>
+          <td class="col-other">Electron (cross-platform)</td>
+        </tr>
+        <tr>
+          <td>Push-to-talk hotkey</td>
+          <td class="col-murmur"><span class="check">✓</span></td>
+          <td class="col-other"><span class="check">✓</span></td>
+        </tr>
+        <tr>
+          <td>LLM cleanup</td>
+          <td class="col-murmur"><span class="check">✓ (bring your own API)</span></td>
+          <td class="col-other"><span class="check">✓ (built-in)</span></td>
+        </tr>
+        <tr>
+          <td>Works in terminal / VS Code</td>
+          <td class="col-murmur"><span class="check">✓ CGEventPost</span></td>
+          <td class="col-other">Varies</td>
+        </tr>
+        <tr>
+          <td>Voice data sent to cloud</td>
+          <td class="col-murmur"><span class="check">Your ASR endpoint only</span></td>
+          <td class="col-other">Vendor servers</td>
+        </tr>
+        <tr>
+          <td>Self-hostable ASR</td>
+          <td class="col-murmur"><span class="check">✓</span></td>
+          <td class="col-other"><span class="cross">✗</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how" id="how" aria-labelledby="how-heading">
+  <p class="label r">How it works</p>
+  <h2 class="r" id="how-heading">Up and running<br>in three steps</h2>
+  <div class="steps">
+    <article class="step r">
+      <div class="step-num">STEP 01</div>
+      <h3>Add credentials</h3>
+      <p>Click the menu bar icon → Settings. Enter your Volcengine BigASR App ID and Access Token. Optionally add an OpenAI-compatible URL for LLM cleanup.</p>
+    </article>
+    <article class="step r">
+      <div class="step-num">STEP 02</div>
+      <h3>Grant permission</h3>
+      <p>System Settings → Privacy &amp; Security → Accessibility. Add Murmur to the allow list. Required for hotkey monitoring and text insertion via CGEventPost.</p>
+    </article>
+    <article class="step r">
+      <div class="step-num">STEP 03</div>
+      <h3>Hold and speak</h3>
+      <p>Place cursor in any text field. Hold <kbd class="kbd">⌥ Right Option</kbd>, speak, release. Transcribed text appears instantly — no extra clicks.</p>
+    </article>
   </div>
 </section>
 
 <!-- DOWNLOAD -->
-<section id="download">
-  <div class="download">
+<section class="download-section" id="download" aria-labelledby="download-heading">
+  <div class="download-inner">
     <div class="dl-left r">
-      <h2>免费下载，<br>开源使用</h2>
-      <p>macOS 14 Sonoma 或更高版本。解压 DMG，拖入 Applications 即可运行。</p>
+      <p class="label">Download</p>
+      <h2 id="download-heading">Free.<br>No account.<br>No signup.</h2>
+      <p>Open the DMG, drag Murmur to Applications, done. macOS 14 Sonoma or later.</p>
       <div class="cta-row">
-        <a class="btn-dl" href="murmur-latest.dmg">
-          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <a class="btn-primary" href="murmur-latest.dmg" aria-label="Download Murmur DMG">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12m0 0l-4-4m4 4l4-4"/>
           </svg>
-          下载最新版本
+          Download Murmur — Free
         </a>
       </div>
     </div>
     <div class="dl-right r">
       <ul class="req-list">
-        <li>macOS 14 Sonoma 或更高版本</li>
-        <li>Apple Silicon 或 Intel Mac</li>
-        <li>火山引擎 BigASR 账号</li>
-        <li>辅助功能权限</li>
-        <li>麦克风权限</li>
+        <li>macOS 14 Sonoma or later</li>
+        <li>Apple Silicon or Intel Mac</li>
+        <li>Volcengine BigASR account (free tier available)</li>
+        <li>Accessibility permission</li>
+        <li>Microphone permission</li>
       </ul>
     </div>
   </div>
 </section>
+</main>
 
 <!-- FOOTER -->
 <footer>
   <div class="footer-inner">
-    <a class="footer-brand" href="#">Murmur</a>
+    <a class="footer-brand" href="/">Murmur</a>
     <ul class="footer-links">
-      <li><a href="CHANGELOG.md" target="_blank">Changelog</a></li>
-      <li><a href="LICENSE" target="_blank">MIT License</a></li>
-
+      <li><a href="CHANGELOG.md">Changelog</a></li>
+      <li><a href="LICENSE">MIT License</a></li>
     </ul>
-    <span class="footer-copy">© 2026 locke</span>
+    <span class="footer-copy">© 2026 Murmur</span>
   </div>
 </footer>
 
 <script>
-  // ── Wave ─────────────────────────────────────────────────────
+  // ── Wave ──────────────────────────────────────────────────────
   (function () {
     const c = document.getElementById('wave');
     const ctx = c.getContext('2d');
@@ -601,17 +769,14 @@
 
     function draw() {
       ctx.clearRect(0, 0, W, H);
-      const target = 0.2 + 0.55 * Math.abs(Math.sin(t * 0.45));
-      amp += (target - amp) * 0.05;
-
+      amp += (0.2 + 0.55 * Math.abs(Math.sin(t * 0.45)) - amp) * 0.05;
       ctx.beginPath();
       for (let x = 0; x <= W; x++) {
         const p = x / W;
-        let y = Math.sin(p * Math.PI * 3.2 + t * 2.8) * 0.55
-              + Math.sin(p * Math.PI * 5.7 + t * 1.9) * 0.30
-              + Math.sin(p * Math.PI * 1.8 + t * 3.4) * 0.15;
-        y *= amp * H * 0.42;
-        x === 0 ? ctx.moveTo(x, H / 2 + y) : ctx.lineTo(x, H / 2 + y);
+        const y = (Math.sin(p * Math.PI * 3.2 + t * 2.8) * 0.55
+                 + Math.sin(p * Math.PI * 5.7 + t * 1.9) * 0.30
+                 + Math.sin(p * Math.PI * 1.8 + t * 3.4) * 0.15) * amp * H * 0.42;
+        x === 0 ? ctx.moveTo(x, H/2 + y) : ctx.lineTo(x, H/2 + y);
       }
       ctx.strokeStyle = '#b07848';
       ctx.lineWidth = 1.5;
@@ -621,7 +786,7 @@
     }
     draw();
 
-    const labels = ['正在聆听…', '处理中…', '会议纪要今天三点', 'LLM 归整中…', '已插入'];
+    const labels = ['Listening…', 'Processing…', 'open pull request', 'Polishing…', 'Inserted ✓'];
     const el = document.getElementById('pill-label');
     let i = 0;
     setInterval(() => {
@@ -637,7 +802,7 @@
     .then(r => r.json())
     .then(d => {
       document.getElementById('build-meta').innerHTML =
-        `构建 <b>${d.sha}</b> · <b>${d.date}</b>`;
+        `Build <b>${d.sha}</b> · <b>${d.date}</b>`;
     })
     .catch(() => {});
 
@@ -645,12 +810,12 @@
   const io = new IntersectionObserver(entries => {
     entries.forEach((e, idx) => {
       if (e.isIntersecting) {
-        e.target.style.transitionDelay = (idx * 0.06) + 's';
+        e.target.style.transitionDelay = (idx * 0.055) + 's';
         e.target.classList.add('on');
         io.unobserve(e.target);
       }
     });
-  }, { threshold: 0.1 });
+  }, { threshold: 0.08 });
 
   document.querySelectorAll('.r').forEach(el => io.observe(el));
 </script>
