@@ -43,11 +43,9 @@ deploy-website:
     - printf '{"sha":"%s","date":"%s","job":"%s"}' "$CI_COMMIT_SHORT_SHA" "$(date -u +%Y-%m-%d)" "$CI_JOB_ID" > ~/murmur-website/latest.json
     - cp -r website/. ~/murmur-website/
     - cp CHANGELOG.md LICENSE ~/murmur-website/
-    - pkill -f 'python3 -m http.server 8080' 2>/dev/null || true
+    - /opt/homebrew/bin/nginx -s reload
     - sleep 0.5
-    - nohup python3 -m http.server 8080 --directory ~/murmur-website > ~/murmur-website.log 2>&1 &
-    - sleep 1
-    - curl -sf http://localhost:8080/ > /dev/null && echo "Website live at http://192.168.10.28:8080"
+    - curl -sf http://localhost:8888/ > /dev/null && echo "Website live at http://192.168.10.28:8888"
   needs: [build-release]
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
