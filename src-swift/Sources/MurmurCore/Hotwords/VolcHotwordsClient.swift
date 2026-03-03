@@ -98,7 +98,7 @@ public enum SyncError: Error, LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .apiError(let code, let msg): return "[\(code)] \(msg)"
-        case .invalidResponse: return "无效响应"
+        case .invalidResponse: return "Invalid response"
         }
     }
 }

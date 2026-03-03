@@ -30,8 +30,8 @@ struct SettingsView: View {
         ("日本語", "ja-JP"),
     ]
 
-    let mouseEnterOptions: [(LocalizedStringKey, String?)] = [
-        ("common.disabled", nil),
+    let mouseEnterOptions: [(String, String?)] = [
+        (String(localized: "common.disabled"), nil),
         ("Middle", "MouseMiddle"),
         ("Side Back", "MouseSideBack"),
         ("Side Fwd", "MouseSideFwd"),
