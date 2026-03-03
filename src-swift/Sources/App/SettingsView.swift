@@ -37,8 +37,9 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Section("ASR 凭证") {
-                TextField("App ID", text: $config.api_app_id)
+            Section {
+                TextField("AppID", text: $config.api_app_id)
+                    .help("火山引擎控制台 → 语音技术 → 应用管理 → AppID")
                 HStack {
                     if showApiKey {
                         TextField("Access Token", text: $config.api_access_token)
@@ -49,7 +50,14 @@ struct SettingsView: View {
                         Image(systemName: showApiKey ? "eye.slash" : "eye")
                     }.buttonStyle(.plain)
                 }
+                .help("火山引擎控制台 → 语音技术 → 应用管理 → Access Token")
                 TextField("Resource ID", text: $config.api_resource_id)
+                    .help("默认：volc.bigasr.sauc.duration")
+            } header: {
+                Text("火山引擎 ASR")
+            } footer: {
+                Text("凭证在火山引擎控制台 speech.volcengine.com 获取")
+                    .foregroundStyle(.secondary)
             }
 
             Section("快捷键") {
