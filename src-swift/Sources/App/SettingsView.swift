@@ -171,6 +171,20 @@ private struct LLMTab: View {
                     SecretField("", text: $config.llm_api_key, show: $showKey)
                 }
             }
+
+            Section("润色提示词") {
+                TextEditor(text: $config.llm_prompt)
+                    .font(.system(.body, design: .monospaced))
+                    .frame(minHeight: 200)
+                HStack {
+                    Spacer()
+                    Button("恢复默认") {
+                        config.llm_prompt = defaultLLMPrompt
+                    }
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.secondary)
+                }
+            }
         }
         .formStyle(.grouped)
     }
