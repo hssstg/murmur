@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import AVFoundation
 import MurmurCore
 
 @MainActor
@@ -22,6 +23,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         setupAudio()
         setupKeyboard()
         setupTray()
+
+        // Request microphone permission early so it's ready on first PTT press
+        AVCaptureDevice.requestAccess(for: .audio) { granted in
+            if !granted {
+                fputs("[murmur] microphone permission denied\n", stderr)
+            }
+        }
     }
 
     // MARK: - PTT callbacks
@@ -62,7 +70,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         keyboard.onPTTStart = { [weak self] in
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                try? self.audio.start(deviceUID: self.configStore.config.microphone)
+                do {
+                    try self.audio.start(deviceUID: self.configStore.config.microphone)
+                } catch {
+                    fputs("[murmur] audio.start failed: \(error)\n", stderr)
+                }
                 self.ptt.handleStart()
             }
         }
