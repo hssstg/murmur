@@ -14,8 +14,8 @@
     <string>2.0</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>Murmur needs microphone access for push-to-talk speech recognition.</string>
-    <key>NSAppleEventsUsageDescription</key>
-    <string>Murmur needs Accessibility access to monitor hotkeys and insert text.</string>
+    <key>NSAccessibilityUsageDescription</key>
+    <string>Murmur needs Accessibility access to monitor keyboard hotkeys for push-to-talk.</string>
     <key>LSUIElement</key>
     <true/>
     <key>LSMinimumSystemVersion</key>

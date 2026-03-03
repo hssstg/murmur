@@ -116,13 +116,13 @@ struct SettingsView: View {
 
 struct MicrophonePicker: View {
     @Binding var selected: String?
-    @State private var devices: [String] = []
+    @State private var devices: [(id: String, name: String)] = []
 
     var body: some View {
         Picker("麦克风", selection: $selected) {
             Text("系统默认").tag(Optional<String>.none)
-            ForEach(devices, id: \.self) { name in
-                Text(name).tag(Optional(name))
+            ForEach(devices, id: \.id) { device in
+                Text(device.name).tag(Optional(device.id))
             }
         }
         .onAppear {
@@ -131,7 +131,7 @@ struct MicrophonePicker: View {
                 mediaType: .audio,
                 position: .unspecified
             )
-            devices = session.devices.map { $0.localizedName }
+            devices = session.devices.map { (id: $0.uniqueID, name: $0.localizedName) }
         }
     }
 }

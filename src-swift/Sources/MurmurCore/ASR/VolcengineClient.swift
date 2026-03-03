@@ -4,6 +4,7 @@ public class VolcengineClient: NSObject, @unchecked Sendable {
     private let config: VolcengineConfig
     private var webSocket: URLSessionWebSocketTask?
     private var session: URLSession?
+    private let lock = NSLock()
     private var connectionState: String = "disconnected"
     private var requestId = ""
     private var sequence: Int32 = 0
@@ -18,27 +19,34 @@ public class VolcengineClient: NSObject, @unchecked Sendable {
         self.config = config
     }
 
-    public var isConnected: Bool { connectionState == "connected" && webSocket != nil }
+    public var isConnected: Bool { lock.withLock { connectionState == "connected" && webSocket != nil } }
 
     public func connect() async throws {
         guard !isConnected else { return }
-        reset()
-        connectionState = "connecting"
-        onStatus?(.connecting)
+        lock.withLock { reset() }
+        lock.withLock { connectionState = "connecting" }
+        let onStatusCb = lock.withLock { onStatus }
+        onStatusCb?(.connecting)
 
-        requestId = UUID().uuidString
-        sequence = 1
+        let newRequestId = UUID().uuidString
+        lock.withLock {
+            requestId = newRequestId
+            sequence = 1
+        }
 
         let url = URL(string: VolcengineProtocol.endpoint)!
         var req = URLRequest(url: url)
         req.setValue(config.appId,        forHTTPHeaderField: "X-Api-App-Key")
         req.setValue(config.accessToken,  forHTTPHeaderField: "X-Api-Access-Key")
         req.setValue(config.resourceId,   forHTTPHeaderField: "X-Api-Resource-Id")
-        req.setValue(requestId,           forHTTPHeaderField: "X-Api-Connect-Id")
+        req.setValue(newRequestId,        forHTTPHeaderField: "X-Api-Connect-Id")
 
-        session = URLSession(configuration: .default, delegate: nil, delegateQueue: nil)
-        let task = session!.webSocketTask(with: req)
-        webSocket = task
+        let newSession = URLSession(configuration: .default, delegate: nil, delegateQueue: nil)
+        let task = newSession.webSocketTask(with: req)
+        lock.withLock {
+            session = newSession
+            webSocket = task
+        }
         task.resume()
         startReceiveLoop(task)
 
@@ -67,27 +75,39 @@ public class VolcengineClient: NSObject, @unchecked Sendable {
             "request": requestBody
         ]
 
-        let packet = try VolcengineProtocol.buildInitPacket(payload: initPayload, sequence: sequence)
-        sequence = 2
+        let seq1 = lock.withLock { sequence }
+        let packet = try VolcengineProtocol.buildInitPacket(payload: initPayload, sequence: seq1)
+        lock.withLock { sequence = 2 }
 
         try await sendRaw(packet)
 
         // Flush buffered audio from connecting phase
-        for chunk in pendingAudioChunks { sendAudioChunk(chunk) }
-        pendingAudioChunks = []
-        connectionState = "connected"
+        let chunks = lock.withLock { () -> [Data] in
+            let c = pendingAudioChunks
+            pendingAudioChunks = []
+            return c
+        }
+        for chunk in chunks { sendAudioChunk(chunk) }
 
-        if pendingFinish {
-            pendingFinish = false
+        let hasPendingFinish = lock.withLock { () -> Bool in
+            connectionState = "connected"
+            let p = pendingFinish
+            if p { pendingFinish = false }
+            return p
+        }
+
+        if hasPendingFinish {
             sendFinishPacket()
         } else {
-            onStatus?(.listening)
+            let cb = lock.withLock { onStatus }
+            cb?(.listening)
         }
     }
 
     public func sendAudio(_ data: Data) {
-        if connectionState == "connecting" {
-            pendingAudioChunks.append(data)
+        let state = lock.withLock { connectionState }
+        if state == "connecting" {
+            lock.withLock { pendingAudioChunks.append(data) }
             return
         }
         guard isConnected else { return }
@@ -95,8 +115,9 @@ public class VolcengineClient: NSObject, @unchecked Sendable {
     }
 
     public func finishAudio() {
-        if connectionState == "connecting" {
-            pendingFinish = true
+        let state = lock.withLock { connectionState }
+        if state == "connecting" {
+            lock.withLock { pendingFinish = true }
             return
         }
         guard isConnected else { return }
@@ -104,16 +125,23 @@ public class VolcengineClient: NSObject, @unchecked Sendable {
     }
 
     public func disconnect() {
-        connectionState = "disconnected"
-        webSocket?.cancel(with: .goingAway, reason: nil)
-        webSocket = nil
-        session?.invalidateAndCancel()
-        session = nil
-        onStatus?(.idle)
+        let (ws, sess) = lock.withLock { () -> (URLSessionWebSocketTask?, URLSession?) in
+            connectionState = "disconnected"
+            let w = webSocket
+            let s = session
+            webSocket = nil
+            session = nil
+            return (w, s)
+        }
+        ws?.cancel(with: .goingAway, reason: nil)
+        sess?.invalidateAndCancel()
+        let cb = lock.withLock { onStatus }
+        cb?(.idle)
     }
 
     // MARK: - Private
 
+    // Must be called with lock held
     private func reset() {
         requestId = ""
         sequence = 0
@@ -122,20 +150,28 @@ public class VolcengineClient: NSObject, @unchecked Sendable {
     }
 
     private func sendAudioChunk(_ data: Data) {
-        let packet = VolcengineProtocol.buildAudioPacket(audio: data, sequence: sequence, isLast: false)
-        sequence += 1
-        webSocket?.send(.data(packet)) { _ in }
+        let (packet, ws) = lock.withLock { () -> (Data, URLSessionWebSocketTask?) in
+            let p = VolcengineProtocol.buildAudioPacket(audio: data, sequence: sequence, isLast: false)
+            sequence += 1
+            return (p, webSocket)
+        }
+        ws?.send(.data(packet)) { _ in }
     }
 
     private func sendFinishPacket() {
-        let packet = VolcengineProtocol.buildAudioPacket(audio: Data(), sequence: sequence, isLast: true)
-        onStatus?(.processing)
-        webSocket?.send(.data(packet)) { _ in }
+        let (packet, ws) = lock.withLock { () -> (Data, URLSessionWebSocketTask?) in
+            let p = VolcengineProtocol.buildAudioPacket(audio: Data(), sequence: sequence, isLast: true)
+            return (p, webSocket)
+        }
+        let cb = lock.withLock { onStatus }
+        cb?(.processing)
+        ws?.send(.data(packet)) { _ in }
     }
 
     private func sendRaw(_ data: Data) async throws {
+        let ws = lock.withLock { webSocket }
         try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
-            webSocket?.send(.data(data)) { error in
+            ws?.send(.data(data)) { error in
                 if let e = error { cont.resume(throwing: e) }
                 else { cont.resume() }
             }
@@ -150,9 +186,11 @@ public class VolcengineClient: NSObject, @unchecked Sendable {
                 if case .data(let data) = msg { self.handleMessage(data) }
                 self.startReceiveLoop(task)
             case .failure:
-                if self.connectionState != "disconnected" {
-                    self.connectionState = "disconnected"
-                    self.onStatus?(.idle)
+                let state = self.lock.withLock { self.connectionState }
+                if state != "disconnected" {
+                    self.lock.withLock { self.connectionState = "disconnected" }
+                    let cb = self.lock.withLock { self.onStatus }
+                    cb?(.idle)
                 }
             }
         }
@@ -163,15 +201,17 @@ public class VolcengineClient: NSObject, @unchecked Sendable {
         switch parsed.kind {
         case .error:
             let msg = parsed.errorMessage ?? "unknown ASR server error"
-            onError?(NSError(domain: "VolcengineASR", code: -1,
+            let (onErrorCb, onStatusCb) = lock.withLock { (onError, onStatus) }
+            onErrorCb?(NSError(domain: "VolcengineASR", code: -1,
                              userInfo: [NSLocalizedDescriptionKey: msg]))
-            onStatus?(.error)
+            onStatusCb?(.error)
         case .ack:
             break
         case .result:
             let result = ASRResult(text: parsed.text ?? "", isFinal: parsed.isFinal)
-            onResult?(result)
-            if parsed.isFinal { onStatus?(.done) }
+            let (onResultCb, onStatusCb) = lock.withLock { (onResult, onStatus) }
+            onResultCb?(result)
+            if parsed.isFinal { onStatusCb?(.done) }
         }
     }
 }

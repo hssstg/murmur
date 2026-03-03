@@ -11,11 +11,11 @@ public enum TextInserter {
 
         let source = CGEventSource(stateID: .hidSystemState)
         for scalar in text.unicodeScalars {
-            var char = UniChar(scalar.value & 0xFFFF)
+            var chars = Array(String(scalar).utf16)
             if let down = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: true),
                let up   = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: false) {
-                down.keyboardSetUnicodeString(stringLength: 1, unicodeString: &char)
-                up.keyboardSetUnicodeString(stringLength: 1, unicodeString: &char)
+                down.keyboardSetUnicodeString(stringLength: chars.count, unicodeString: &chars)
+                up.keyboardSetUnicodeString(stringLength: chars.count, unicodeString: &chars)
                 down.post(tap: .cghidEventTap)
                 up.post(tap: .cghidEventTap)
             }

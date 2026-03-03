@@ -38,7 +38,8 @@ class FloatingWindow: NSWindow {
     }
 
     func positionNearCursor(_ point: NSPoint) {
-        guard let screen = NSScreen.main else { return }
+        let screen = NSScreen.screens.first(where: { NSMouseInRect(point, $0.frame, false) }) ?? NSScreen.main
+        guard let screen = screen else { return }
         let sf = screen.visibleFrame
         var origin = NSPoint(x: point.x - frame.width / 2, y: point.y + 20)
         origin.x = max(sf.minX + 8, min(origin.x, sf.maxX - frame.width - 8))

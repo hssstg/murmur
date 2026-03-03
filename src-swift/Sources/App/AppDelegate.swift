@@ -113,9 +113,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 get:  { self.configStore.config },
                 set:  { self.configStore.config = $0 }
             ),
-            onSave: {
+            onSave: { [weak self] in
+                guard let self = self else { return }
                 try? self.configStore.save()
-                Task { @MainActor in
+                Task { @MainActor [weak self] in
+                    guard let self = self else { return }
                     self.ptt.updateConfig(self.configStore.config)
                     self.keyboard.stop()
                     self.setupKeyboard()

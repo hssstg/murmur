@@ -12,6 +12,7 @@ public class KeyboardMonitor {
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     private var tapThread: Thread?
+    private var tapRunLoop: CFRunLoop?
     private var pttActive = false
     private var lastFlags: CGEventFlags = []
 
@@ -50,7 +51,9 @@ public class KeyboardMonitor {
 
         runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
         tapThread = Thread {
-            CFRunLoopAddSource(CFRunLoopGetCurrent(), self.runLoopSource, .commonModes)
+            let rl = CFRunLoopGetCurrent()
+            self.tapRunLoop = rl
+            CFRunLoopAddSource(rl, self.runLoopSource, .commonModes)
             CGEvent.tapEnable(tap: tap, enable: true)
             CFRunLoopRun()
         }
@@ -62,6 +65,8 @@ public class KeyboardMonitor {
             CGEvent.tapEnable(tap: tap, enable: false)
         }
         eventTap = nil
+        if let rl = tapRunLoop { CFRunLoopStop(rl) }
+        tapRunLoop = nil
         tapThread?.cancel()
         tapThread = nil
     }

@@ -22,6 +22,10 @@ public class AudioCapture {
     public func start(deviceUID: String? = nil) throws {
         guard !isRunning else { return }
 
+        if let targetUID = deviceUID, !targetUID.isEmpty {
+            setDefaultInputDevice(uid: targetUID)
+        }
+
         let inputNode = engine.inputNode
         let hwFormat = inputNode.inputFormat(forBus: 0)
 
@@ -74,6 +78,45 @@ public class AudioCapture {
         let byteCount = Int(outBuf.frameLength) * MemoryLayout<Int16>.size
         let data = Data(bytes: int16Data[0], count: byteCount)
         onChunk?(data)
+    }
+
+    private func setDefaultInputDevice(uid targetUID: String) {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDevices,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var propSize: UInt32 = 0
+        AudioObjectGetPropertyDataSize(AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &propSize)
+        let count = Int(propSize) / MemoryLayout<AudioDeviceID>.size
+        var devices = [AudioDeviceID](repeating: 0, count: count)
+        AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &propSize, &devices)
+
+        var deviceID: AudioDeviceID = kAudioObjectUnknown
+        for id in devices {
+            var uidRef: CFString? = nil
+            var uidSize = UInt32(MemoryLayout<CFString?>.size)
+            var uidAddr = AudioObjectPropertyAddress(
+                mSelector: kAudioDevicePropertyDeviceUID,
+                mScope: kAudioObjectPropertyScopeGlobal,
+                mElement: kAudioObjectPropertyElementMain
+            )
+            AudioObjectGetPropertyData(id, &uidAddr, 0, nil, &uidSize, &uidRef)
+            if let uid = uidRef as String?, uid == targetUID {
+                deviceID = id
+                break
+            }
+        }
+
+        guard deviceID != kAudioObjectUnknown else { return }
+
+        var setAddr = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultInputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var devID = deviceID
+        AudioObjectSetPropertyData(AudioObjectID(kAudioObjectSystemObject), &setAddr, 0, nil, UInt32(MemoryLayout<AudioDeviceID>.size), &devID)
     }
 
     private static func currentInputDeviceName() -> String {
