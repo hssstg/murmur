@@ -60,10 +60,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         keyboard = KeyboardMonitor(hotkey: cfg.hotkey, mouseEnterBtn: cfg.mouse_enter_btn)
 
         keyboard.onPTTStart = { [weak self] in
-            Task { @MainActor [weak self] in self?.ptt.handleStart() }
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                try? self.audio.start(deviceUID: self.configStore.config.microphone)
+                self.ptt.handleStart()
+            }
         }
         keyboard.onPTTStop = { [weak self] in
-            Task { @MainActor [weak self] in self?.ptt.handleStop() }
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.audio.stop()
+                self.ptt.handleStop()
+            }
         }
         keyboard.onCursorPosition = { [weak self] point in
             Task { @MainActor [weak self] in
@@ -85,7 +93,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         audio.onChunk = { [weak self] data in
             Task { @MainActor [weak self] in self?.ptt.handleAudioChunk(data) }
         }
-        try? audio.start(deviceUID: configStore.config.microphone)
+        // Audio is started on PTT press and stopped on PTT release
     }
 
     // MARK: - Tray
