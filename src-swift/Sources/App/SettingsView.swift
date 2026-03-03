@@ -6,7 +6,7 @@ struct SettingsView: View {
     @Binding var config: AppConfig
     var onSave: () -> Void
 
-    @State private var saveLabel   = "保存"
+    @State private var saveLabel: LocalizedStringKey = "common.save"
     @State private var showApiKey  = false
     @State private var showLlmKey  = false
     @State private var showHwAk    = false
@@ -30,8 +30,8 @@ struct SettingsView: View {
         ("日本語", "ja-JP"),
     ]
 
-    let mouseEnterOptions: [(String, String?)] = [
-        ("禁用", nil),
+    let mouseEnterOptions: [(LocalizedStringKey, String?)] = [
+        ("common.disabled", nil),
         ("Middle", "MouseMiddle"),
         ("Side Back", "MouseSideBack"),
         ("Side Fwd", "MouseSideFwd"),
@@ -41,7 +41,7 @@ struct SettingsView: View {
         Form {
             Section {
                 TextField("AppID", text: $config.api_app_id)
-                    .help("火山引擎控制台 → 语音技术 → 应用管理 → AppID")
+                    .help("settings.asr.appid.help")
                 HStack {
                     if showApiKey {
                         TextField("Access Token", text: $config.api_access_token)
@@ -52,46 +52,46 @@ struct SettingsView: View {
                         Image(systemName: showApiKey ? "eye.slash" : "eye")
                     }.buttonStyle(.plain)
                 }
-                .help("火山引擎控制台 → 语音技术 → 应用管理 → Access Token")
+                .help("settings.asr.token.help")
                 TextField("Resource ID", text: $config.api_resource_id)
-                    .help("默认：volc.bigasr.sauc.duration")
+                    .help("settings.asr.resourceid.help")
             } header: {
-                Text("火山引擎 ASR")
+                Text("settings.asr.section")
             } footer: {
-                Text("凭证在火山引擎控制台 speech.volcengine.com 获取")
+                Text("settings.asr.footer")
                     .foregroundStyle(.secondary)
             }
 
-            Section("快捷键") {
-                Picker("热键", selection: $config.hotkey) {
+            Section("settings.hotkey.section") {
+                Picker("settings.hotkey.label", selection: $config.hotkey) {
                     ForEach(hotkeyOptions, id: \.1) { label, value in
                         Text(label).tag(value)
                     }
                 }
-                Picker("鼠标 Enter", selection: $config.mouse_enter_btn) {
+                Picker("settings.mouseenter.label", selection: $config.mouse_enter_btn) {
                     ForEach(mouseEnterOptions, id: \.1) { label, value in
                         Text(label).tag(value)
                     }
                 }
             }
 
-            Section("语音识别") {
-                Picker("语言", selection: $config.asr_language) {
+            Section("settings.asr2.section") {
+                Picker("settings.asr.language", selection: $config.asr_language) {
                     ForEach(langOptions, id: \.1) { label, value in
                         Text(label).tag(value)
                     }
                 }
-                Toggle("标点符号", isOn: $config.asr_enable_punc)
-                Toggle("数字转换 (ITN)", isOn: $config.asr_enable_itn)
-                Toggle("顺滑处理 (DDC)", isOn: $config.asr_enable_ddc)
-                TextField("热词表名", text: $config.asr_vocabulary)
+                Toggle("settings.asr.punc", isOn: $config.asr_enable_punc)
+                Toggle("settings.asr.itn", isOn: $config.asr_enable_itn)
+                Toggle("settings.asr.ddc", isOn: $config.asr_enable_ddc)
+                TextField("settings.asr.vocabulary", text: $config.asr_vocabulary)
             }
 
-            Section("大模型配置") {
+            Section("settings.llm.section") {
                 TextField("Base URL", text: $config.llm_base_url)
-                    .help("OpenAI 兼容接口地址，如 https://api.openai.com/")
-                TextField("模型", text: $config.llm_model)
-                    .help("模型名称，如 gpt-4o、glm-4-flash")
+                    .help("settings.llm.baseurl.help")
+                TextField("settings.llm.model", text: $config.llm_model)
+                    .help("settings.llm.model.help")
                 HStack {
                     if showLlmKey {
                         TextField("API Key", text: $config.llm_api_key)
@@ -104,11 +104,11 @@ struct SettingsView: View {
                 }
             }
 
-            Section("LLM 润色") {
-                Toggle("启用语音转写后自动润色", isOn: $config.llm_enabled)
+            Section("settings.llmpolish.section") {
+                Toggle("settings.llmpolish.enable", isOn: $config.llm_enabled)
             }
 
-            Section("热词凭证（火山自学习平台）") {
+            Section("settings.hotwords.section") {
                 HStack {
                     if showHwAk {
                         TextField("Access Key ID", text: $config.hotwords_ak)
@@ -131,7 +131,7 @@ struct SettingsView: View {
                 }
             }
 
-            Section("麦克风") {
+            Section("settings.mic.section") {
                 MicrophonePicker(selected: $config.microphone)
             }
         }
@@ -140,9 +140,9 @@ struct SettingsView: View {
             ToolbarItem(placement: .confirmationAction) {
                 Button(saveLabel) {
                     onSave()
-                    saveLabel = "已保存 ✓"
+                    saveLabel = "common.saved"
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                        saveLabel = "保存"
+                        saveLabel = "common.save"
                     }
                 }
             }
@@ -155,8 +155,8 @@ struct MicrophonePicker: View {
     @State private var devices: [(id: String, name: String)] = []
 
     var body: some View {
-        Picker("麦克风", selection: $selected) {
-            Text("系统默认").tag(Optional<String>.none)
+        Picker("settings.mic.label", selection: $selected) {
+            Text("common.system_default").tag(Optional<String>.none)
             ForEach(devices, id: \.id) { device in
                 Text(device.name).tag(Optional(device.id))
             }
