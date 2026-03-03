@@ -8,7 +8,8 @@ let package = Package(
         .executableTarget(
             name: "murmur",
             dependencies: ["MurmurCore"],
-            path: "Sources/App"
+            path: "Sources/App",
+            resources: [.copy("Resources")]
         ),
         .target(
             name: "MurmurCore",

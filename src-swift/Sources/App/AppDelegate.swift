@@ -128,7 +128,25 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private func setupTray() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let btn = statusItem.button {
-            if let img = NSImage(named: "tray") {
+            let trayImage: NSImage? = {
+                // Debug (SPM) builds: load from SPM resource bundle next to binary
+                let execDir = Bundle.main.executableURL?.deletingLastPathComponent()
+                let spmBundle = execDir.flatMap {
+                    Bundle(url: $0.appendingPathComponent("murmur_murmur.bundle"))
+                }
+                // Prefer @2x for Retina; set logical size to 18pt so it renders sharp
+                if let url2x = spmBundle?.url(forResource: "tray@2x", withExtension: "png", subdirectory: "Resources"),
+                   let img = NSImage(contentsOf: url2x) {
+                    img.size = NSSize(width: 18, height: 18)
+                    return img
+                }
+                if let url = spmBundle?.url(forResource: "tray", withExtension: "png", subdirectory: "Resources") {
+                    return NSImage(contentsOf: url)
+                }
+                // Release (.app) builds: load from main bundle resources
+                return NSImage(named: "tray")
+            }()
+            if let img = trayImage {
                 img.isTemplate = true
                 btn.image = img
             } else {
@@ -151,7 +169,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let hosting = NSHostingController(rootView: StatsView(store: historyStore))
         let win = EscapableWindow(contentViewController: hosting)
         win.title = "Murmur 使用统计"
-        win.setContentSize(NSSize(width: 560, height: 560))
+        win.setContentSize(NSSize(width: 640, height: 640))
         win.styleMask = [.titled, .closable, .resizable]
         win.center()
         win.delegate = self
@@ -171,7 +189,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         )
         let win = EscapableWindow(contentViewController: hosting)
         win.title = "Murmur 历史记录"
-        win.setContentSize(NSSize(width: 540, height: 480))
+        win.setContentSize(NSSize(width: 640, height: 560))
         win.styleMask = [.titled, .closable, .resizable, .miniaturizable]
         win.center()
         win.delegate = self
@@ -191,7 +209,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         )
         let win = EscapableWindow(contentViewController: hosting)
         win.title = "Murmur 热词库"
-        win.setContentSize(NSSize(width: 420, height: 400))
+        win.setContentSize(NSSize(width: 520, height: 500))
         win.styleMask = [.titled, .closable, .resizable, .miniaturizable]
         win.center()
         win.delegate = self
@@ -224,11 +242,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         )
         let hosting = NSHostingController(
             rootView: NavigationStack { view }
-                .frame(minWidth: 480, minHeight: 500)
+                .frame(minWidth: 560, minHeight: 620)
         )
         let win = EscapableWindow(contentViewController: hosting)
         win.title = "Murmur 设置"
-        win.setContentSize(NSSize(width: 500, height: 560))
+        win.setContentSize(NSSize(width: 580, height: 640))
         win.styleMask = [.titled, .closable, .resizable]
         win.center()
         win.delegate = self
