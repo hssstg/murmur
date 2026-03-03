@@ -176,14 +176,16 @@ public class PushToTalk {
             }
             client.onStatus = { [weak self] s in
                 if s == .done || s == .idle {
-                    let latest = self?.latestResult ?? capturedLatest
-                    resolve(latest)
+                    Task { @MainActor [weak self] in
+                        let latest = self?.latestResult ?? capturedLatest
+                        resolve(latest)
+                    }
                 }
             }
 
-            Task {
+            Task { @MainActor [weak self] in
                 try? await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
-                resolve(self.latestResult ?? capturedLatest)
+                resolve(self?.latestResult ?? capturedLatest)
             }
         }
     }

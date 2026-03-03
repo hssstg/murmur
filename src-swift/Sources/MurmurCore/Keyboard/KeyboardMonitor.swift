@@ -20,13 +20,17 @@ public class KeyboardMonitor {
         self.mouseEnterBtn = mouseEnterBtn
     }
 
+    private static let functionKeyCodes: Set<Int64> = [105, 107, 113] // F13, F14, F15
+
     public func start() {
         let eventMask: CGEventMask =
             (1 << CGEventType.flagsChanged.rawValue) |
+            (1 << CGEventType.keyDown.rawValue) |
+            (1 << CGEventType.keyUp.rawValue) |
             (1 << CGEventType.otherMouseDown.rawValue) |
             (1 << CGEventType.otherMouseUp.rawValue)
 
-        let selfPtr = Unmanaged.passRetained(self).toOpaque()
+        let selfPtr = Unmanaged.passUnretained(self).toOpaque()
         eventTap = CGEvent.tapCreate(
             tap: .cgSessionEventTap,
             place: .headInsertEventTap,
@@ -72,6 +76,20 @@ public class KeyboardMonitor {
         case .flagsChanged:
             return handleFlagsChanged(event: event)
 
+        case .keyDown:
+            let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
+            if isFunctionKeyHotkey(keyCode: keyCode) {
+                triggerStart()
+                return nil
+            }
+
+        case .keyUp:
+            let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
+            if isFunctionKeyHotkey(keyCode: keyCode) {
+                triggerStop()
+                return nil
+            }
+
         case .otherMouseDown:
             let btn = Int(event.getIntegerValueField(.mouseEventButtonNumber))
             if isHotkeyMouseButton(btn) { triggerStart(); return nil }
@@ -99,9 +117,6 @@ public class KeyboardMonitor {
             case "RControl": return (.maskControl,   62)
             case "LControl": return (.maskControl,   59)
             case "CapsLock": return (.maskAlphaShift, 57)
-            case "F13": return ([], 105)
-            case "F14": return ([], 107)
-            case "F15": return ([], 113)
             default: return (.maskAlternate, 61)
             }
         }()
@@ -109,14 +124,8 @@ public class KeyboardMonitor {
         if keyCode == expectedKeyCode {
             let hadFlag = lastFlags.contains(flagBit)
             let hasFlag = flags.contains(flagBit)
-            if !flagBit.isEmpty {
-                if !hadFlag && hasFlag  { triggerStart() }
-                if  hadFlag && !hasFlag { triggerStop()  }
-            } else {
-                // Function keys: use raw flags changed event — detect press only via EV_FLAGS_CHANGED
-                // keyCode match + no modifier flag means key down; if pttActive, key up
-                if !pttActive { triggerStart() } else { triggerStop() }
-            }
+            if !hadFlag && hasFlag  { triggerStart() }
+            if  hadFlag && !hasFlag { triggerStop()  }
         }
 
         lastFlags = flags
@@ -137,6 +146,15 @@ public class KeyboardMonitor {
         case "MouseMiddle":   return btn == 2
         case "MouseSideBack": return btn == 3
         case "MouseSideFwd":  return btn == 4
+        default: return false
+        }
+    }
+
+    private func isFunctionKeyHotkey(keyCode: Int64) -> Bool {
+        switch hotkey {
+        case "F13": return keyCode == 105
+        case "F14": return keyCode == 107
+        case "F15": return keyCode == 113
         default: return false
         }
     }
