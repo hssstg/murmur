@@ -87,6 +87,10 @@ suite("testMicrophoneNullAndSome") {
 
 runGzipUtilsTests()
 
+// MARK: - VolcengineProtocol Tests
+
+runVolcengineProtocolTests()
+
 // MARK: - Results
 
 print("\nResults: \(passed) passed, \(failed) failed")
