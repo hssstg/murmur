@@ -807,7 +807,7 @@
     .then(r => r.json())
     .then(d => {
       document.getElementById('build-meta').innerHTML =
-        `Build <b>${d.sha}</b> · <b>${d.date}</b>`;
+        `Version <b>${d.version}</b> · <b>${d.date}</b>`;
     })
     .catch(() => {});
 
