@@ -7,13 +7,15 @@ import MurmurCore
 class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var floatingWindow: FloatingWindow!
     private var settingsWindow: NSWindow?
-    private var historyWindow: NSWindow?
+    private var historyWindow:  NSWindow?
+    private var hotwordsWindow: NSWindow?
     private var statusItem: NSStatusItem!
     private var ptt: PushToTalk!
     private var keyboard: KeyboardMonitor!
     private var audio: AudioCapture!
-    private let configStore = ConfigStore()
-    private let historyStore = HistoryStore()
+    private let configStore   = ConfigStore()
+    private let historyStore  = HistoryStore()
+    private let hotwordStore  = HotwordStore()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)  // no Dock icon
@@ -123,11 +125,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             btn.image = NSImage(systemSymbolName: "mic", accessibilityDescription: "Murmur")
         }
         let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "历史记录...", action: #selector(openHistory), keyEquivalent: "h"))
+        menu.addItem(NSMenuItem(title: "历史记录...", action: #selector(openHistory),   keyEquivalent: "h"))
+        menu.addItem(NSMenuItem(title: "热词库...",   action: #selector(openHotwords), keyEquivalent: "w"))
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "设置...", action: #selector(openSettings), keyEquivalent: ","))
+        menu.addItem(NSMenuItem(title: "设置...",     action: #selector(openSettings), keyEquivalent: ","))
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "退出", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: "退出",        action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         statusItem.menu = menu
     }
 
@@ -149,6 +152,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         win.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         historyWindow = win
+    }
+
+    @objc private func openHotwords() {
+        if let w = hotwordsWindow {
+            w.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+        let hosting = NSHostingController(
+            rootView: HotwordsView(store: hotwordStore, config: configStore.config)
+        )
+        let win = NSWindow(contentViewController: hosting)
+        win.title = "Murmur 热词库"
+        win.setContentSize(NSSize(width: 420, height: 400))
+        win.styleMask = [.titled, .closable, .resizable, .miniaturizable]
+        win.center()
+        win.delegate = self
+        win.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        hotwordsWindow = win
     }
 
     @objc private func openSettings() {
@@ -189,11 +212,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) {
-        if (notification.object as? NSWindow) === settingsWindow {
-            settingsWindow = nil
-        }
-        if (notification.object as? NSWindow) === historyWindow {
-            historyWindow = nil
-        }
+        if (notification.object as? NSWindow) === settingsWindow { settingsWindow = nil }
+        if (notification.object as? NSWindow) === historyWindow  { historyWindow  = nil }
+        if (notification.object as? NSWindow) === hotwordsWindow { hotwordsWindow = nil }
     }
 }

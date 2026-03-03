@@ -6,9 +6,11 @@ struct SettingsView: View {
     @Binding var config: AppConfig
     var onSave: () -> Void
 
-    @State private var saveLabel = "保存"
+    @State private var saveLabel   = "保存"
     @State private var showApiKey  = false
     @State private var showLlmKey  = false
+    @State private var showHwAk    = false
+    @State private var showHwSk    = false
 
     let hotkeyOptions: [(String, String)] = [
         ("Right Option (⌥)", "ROption"),
@@ -100,6 +102,29 @@ struct SettingsView: View {
                             Image(systemName: showLlmKey ? "eye.slash" : "eye")
                         }.buttonStyle(.plain)
                     }
+                }
+            }
+
+            Section("热词凭证（火山自学习平台）") {
+                HStack {
+                    if showHwAk {
+                        TextField("Access Key ID", text: $config.hotwords_ak)
+                    } else {
+                        SecureField("Access Key ID", text: $config.hotwords_ak)
+                    }
+                    Button { showHwAk.toggle() } label: {
+                        Image(systemName: showHwAk ? "eye.slash" : "eye")
+                    }.buttonStyle(.plain)
+                }
+                HStack {
+                    if showHwSk {
+                        TextField("Secret Access Key", text: $config.hotwords_sk)
+                    } else {
+                        SecureField("Secret Access Key", text: $config.hotwords_sk)
+                    }
+                    Button { showHwSk.toggle() } label: {
+                        Image(systemName: showHwSk ? "eye.slash" : "eye")
+                    }.buttonStyle(.plain)
                 }
             }
 
