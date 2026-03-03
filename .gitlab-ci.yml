@@ -25,7 +25,7 @@ build-release:
     - cp .build/release/murmur ../dist/murmur.app/Contents/MacOS/
     - cp Info.plist ../dist/murmur.app/Contents/
     - codesign --force -s - --entitlements murmur.entitlements ../dist/murmur.app
-    - cd ../dist && zip -r murmur-latest.zip murmur.app
+    - cd ../dist && hdiutil create -volname "Murmur" -srcfolder murmur.app -ov -format UDZO murmur-latest.dmg
   artifacts:
     name: "murmur-$CI_COMMIT_SHORT_SHA"
     paths:
@@ -39,7 +39,7 @@ deploy-website:
   tags: [macos]
   script:
     - mkdir -p ~/murmur-website
-    - cp dist/murmur-latest.zip ~/murmur-website/
+    - cp dist/murmur-latest.dmg ~/murmur-website/
     - printf '{"sha":"%s","date":"%s","job":"%s"}' "$CI_COMMIT_SHORT_SHA" "$(date -u +%Y-%m-%d)" "$CI_JOB_ID" > ~/murmur-website/latest.json
     - cp -r website/. ~/murmur-website/
     - cp CHANGELOG.md LICENSE ~/murmur-website/
