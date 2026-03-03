@@ -1,37 +1,53 @@
 stages:
   - test
   - build
+  - deploy
 
-# 需要一个带 macos 标签的 GitLab Runner
-# 在 Runner 机器上执行：gitlab-runner register，tags 填 macos
+# 需要一台带 macos 标签的 GitLab Runner（192.168.10.28）
 
 test:
   stage: test
-  tags:
-    - macos
+  tags: [macos]
   script:
-    - cd src-swift
-    - swift run MurmurTests
+    - cd src-swift && swift run MurmurTests
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
 build-release:
   stage: build
-  tags:
-    - macos
+  tags: [macos]
   script:
     - cd src-swift
     - swift build -c release
-    - mkdir -p dist/murmur.app/Contents/MacOS
-    - mkdir -p dist/murmur.app/Contents/Resources
-    - cp .build/release/murmur dist/murmur.app/Contents/MacOS/
-    - cp Info.plist dist/murmur.app/Contents/
-    - codesign --force -s - --entitlements murmur.entitlements dist/murmur.app
+    - mkdir -p ../dist/murmur.app/Contents/MacOS
+    - mkdir -p ../dist/murmur.app/Contents/Resources
+    - cp .build/release/murmur ../dist/murmur.app/Contents/MacOS/
+    - cp Info.plist ../dist/murmur.app/Contents/
+    - codesign --force -s - --entitlements murmur.entitlements ../dist/murmur.app
+    - cd ../dist && zip -r murmur-latest.zip murmur.app
   artifacts:
     name: "murmur-$CI_COMMIT_SHORT_SHA"
     paths:
-      - src-swift/dist/murmur.app
+      - dist/
     expire_in: 30 days
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+deploy-website:
+  stage: deploy
+  tags: [macos]
+  script:
+    - mkdir -p ~/murmur-website
+    - cp dist/murmur-latest.zip ~/murmur-website/
+    - printf '{"sha":"%s","date":"%s","job":"%s"}' "$CI_COMMIT_SHORT_SHA" "$(date -u +%Y-%m-%d)" "$CI_JOB_ID" > ~/murmur-website/latest.json
+    - cp -r website/. ~/murmur-website/
+    - cp CHANGELOG.md LICENSE ~/murmur-website/
+    - pkill -f 'python3 -m http.server 8080' 2>/dev/null || true
+    - sleep 0.5
+    - nohup python3 -m http.server 8080 --directory ~/murmur-website > ~/murmur-website.log 2>&1 &
+    - sleep 1
+    - curl -sf http://localhost:8080/ > /dev/null && echo "Website live at http://192.168.10.28:8080"
+  needs: [build-release]
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
