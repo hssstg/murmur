@@ -7,11 +7,13 @@ import MurmurCore
 class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var floatingWindow: FloatingWindow!
     private var settingsWindow: NSWindow?
+    private var historyWindow: NSWindow?
     private var statusItem: NSStatusItem!
     private var ptt: PushToTalk!
     private var keyboard: KeyboardMonitor!
     private var audio: AudioCapture!
     private let configStore = ConfigStore()
+    private let historyStore = HistoryStore()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)  // no Dock icon
@@ -42,6 +44,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 text: self.ptt.currentText,
                 levels: self.ptt.audioLevels
             )
+            // Record completed transcription to history
+            if status == .done {
+                let text = self.ptt.currentText
+                self.historyStore.add(text: text)
+            }
         }
         ptt.onTextChange = { [weak self] text in
             guard let self = self else { return }
@@ -116,10 +123,32 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             btn.image = NSImage(systemSymbolName: "mic", accessibilityDescription: "Murmur")
         }
         let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: ","))
+        menu.addItem(NSMenuItem(title: "历史记录...", action: #selector(openHistory), keyEquivalent: "h"))
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: "设置...", action: #selector(openSettings), keyEquivalent: ","))
+        menu.addItem(.separator())
+        menu.addItem(NSMenuItem(title: "退出", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         statusItem.menu = menu
+    }
+
+    @objc private func openHistory() {
+        if let w = historyWindow {
+            w.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+        let hosting = NSHostingController(
+            rootView: HistoryView(store: historyStore)
+        )
+        let win = NSWindow(contentViewController: hosting)
+        win.title = "Murmur 历史记录"
+        win.setContentSize(NSSize(width: 540, height: 480))
+        win.styleMask = [.titled, .closable, .resizable, .miniaturizable]
+        win.center()
+        win.delegate = self
+        win.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        historyWindow = win
     }
 
     @objc private func openSettings() {
@@ -149,7 +178,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 .frame(minWidth: 480, minHeight: 500)
         )
         let win = NSWindow(contentViewController: hosting)
-        win.title = "Murmur Settings"
+        win.title = "Murmur 设置"
         win.setContentSize(NSSize(width: 500, height: 560))
         win.styleMask = [.titled, .closable, .resizable]
         win.center()
@@ -162,6 +191,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         if (notification.object as? NSWindow) === settingsWindow {
             settingsWindow = nil
+        }
+        if (notification.object as? NSWindow) === historyWindow {
+            historyWindow = nil
         }
     }
 }
