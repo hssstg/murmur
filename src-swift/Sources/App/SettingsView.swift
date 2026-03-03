@@ -176,6 +176,7 @@ private struct LLMTab: View {
                 TextEditor(text: $config.llm_prompt)
                     .font(.system(.body, design: .monospaced))
                     .frame(minHeight: 200)
+                    .scrollDisabled(true)
                 HStack {
                     Spacer()
                     Button("恢复默认") {
