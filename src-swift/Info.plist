@@ -18,6 +18,8 @@
     <string>Murmur needs Accessibility access to monitor keyboard hotkeys for push-to-talk.</string>
     <key>LSUIElement</key>
     <true/>
+    <key>CFBundleIconFile</key>
+    <string>murmur</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
 </dict>
