@@ -23,7 +23,7 @@ struct SettingsView: View {
                 .tabItem { Label("热词凭证", systemImage: "text.book.closed") }
         }
         .padding(20)
-        .frame(width: 480)
+        .frame(width: 560, height: 560)
         .safeAreaInset(edge: .bottom) {
             if let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String {
                 Text("Murmur v\(version)")
@@ -69,7 +69,8 @@ private struct AsrTab: View {
                     SecretField("", text: $config.api_access_token, show: $showToken)
                 }
                 LabeledContent("Resource ID") {
-                    TextField("volc.bigasr.sauc.duration", text: $config.api_resource_id)
+                    TextField("", text: $config.api_resource_id)
+                        .help("默认：volc.bigasr.sauc.duration")
                         .multilineTextAlignment(.trailing)
                 }
             }
@@ -159,11 +160,11 @@ private struct LLMTab: View {
 
             Section("接口配置") {
                 LabeledContent("Base URL") {
-                    TextField("https://api.openai.com/", text: $config.llm_base_url)
+                    TextField("", text: $config.llm_base_url)
                         .multilineTextAlignment(.trailing)
                 }
                 LabeledContent("模型") {
-                    TextField("gpt-4o", text: $config.llm_model)
+                    TextField("", text: $config.llm_model)
                         .multilineTextAlignment(.trailing)
                 }
                 LabeledContent("API Key") {
