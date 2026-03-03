@@ -105,7 +105,7 @@ struct HistoryView: View {
                         Text(entry.text)
                             .textSelection(.enabled)
                             .lineLimit(3)
-                        Text(entry.date, style: .relative)
+                        Text(entry.date, format: .dateTime.year().month().day().hour().minute().second())
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
