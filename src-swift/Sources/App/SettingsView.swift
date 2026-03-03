@@ -164,7 +164,9 @@ struct MicrophonePicker: View {
                 mediaType: .audio,
                 position: .unspecified
             )
-            devices = session.devices.map { (id: $0.uniqueID, name: $0.localizedName) }
+            devices = session.devices
+                .filter { !$0.localizedName.hasPrefix("CA") }
+                .map { (id: $0.uniqueID, name: $0.localizedName) }
         }
     }
 }
