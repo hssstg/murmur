@@ -3,12 +3,18 @@ import SwiftUI
 import AVFoundation
 import MurmurCore
 
+// NSWindow that closes itself when ESC is pressed
+private class EscapableWindow: NSWindow {
+    override func cancelOperation(_ sender: Any?) { close() }
+}
+
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var floatingWindow: FloatingWindow!
     private var settingsWindow: NSWindow?
     private var historyWindow:  NSWindow?
     private var hotwordsWindow: NSWindow?
+    private var statsWindow:    NSWindow?
     private var statusItem: NSStatusItem!
     private var ptt: PushToTalk!
     private var keyboard: KeyboardMonitor!
@@ -127,11 +133,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let menu = NSMenu()
         menu.addItem(NSMenuItem(title: "历史记录...", action: #selector(openHistory),   keyEquivalent: "h"))
         menu.addItem(NSMenuItem(title: "热词库...",   action: #selector(openHotwords), keyEquivalent: "w"))
+        menu.addItem(NSMenuItem(title: "使用统计...", action: #selector(openStats),    keyEquivalent: "u"))
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "设置...",     action: #selector(openSettings), keyEquivalent: ","))
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "退出",        action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         statusItem.menu = menu
+    }
+
+    @objc private func openStats() {
+        if let w = statsWindow { w.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true); return }
+        let hosting = NSHostingController(rootView: StatsView(store: historyStore))
+        let win = EscapableWindow(contentViewController: hosting)
+        win.title = "Murmur 使用统计"
+        win.setContentSize(NSSize(width: 560, height: 560))
+        win.styleMask = [.titled, .closable, .resizable]
+        win.center()
+        win.delegate = self
+        win.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        statsWindow = win
     }
 
     @objc private func openHistory() {
@@ -143,7 +164,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let hosting = NSHostingController(
             rootView: HistoryView(store: historyStore)
         )
-        let win = NSWindow(contentViewController: hosting)
+        let win = EscapableWindow(contentViewController: hosting)
         win.title = "Murmur 历史记录"
         win.setContentSize(NSSize(width: 540, height: 480))
         win.styleMask = [.titled, .closable, .resizable, .miniaturizable]
@@ -161,9 +182,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             return
         }
         let hosting = NSHostingController(
-            rootView: HotwordsView(store: hotwordStore, config: configStore.config)
+            rootView: HotwordsView(store: hotwordStore, historyStore: historyStore, config: configStore.config)
         )
-        let win = NSWindow(contentViewController: hosting)
+        let win = EscapableWindow(contentViewController: hosting)
         win.title = "Murmur 热词库"
         win.setContentSize(NSSize(width: 420, height: 400))
         win.styleMask = [.titled, .closable, .resizable, .miniaturizable]
@@ -200,7 +221,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             rootView: NavigationStack { view }
                 .frame(minWidth: 480, minHeight: 500)
         )
-        let win = NSWindow(contentViewController: hosting)
+        let win = EscapableWindow(contentViewController: hosting)
         win.title = "Murmur 设置"
         win.setContentSize(NSSize(width: 500, height: 560))
         win.styleMask = [.titled, .closable, .resizable]
@@ -215,5 +236,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         if (notification.object as? NSWindow) === settingsWindow { settingsWindow = nil }
         if (notification.object as? NSWindow) === historyWindow  { historyWindow  = nil }
         if (notification.object as? NSWindow) === hotwordsWindow { hotwordsWindow = nil }
+        if (notification.object as? NSWindow) === statsWindow    { statsWindow    = nil }
     }
 }

@@ -113,8 +113,13 @@ public class PushToTalk {
             }
 
             guard !self.isSessionActive else { return }
-            self.setStatus(.done)
-            self.scheduleIdleReset(after: 0.8)
+            if textToInsert.isEmpty {
+                self.currentText = ""
+                self.setStatus(.idle)
+            } else {
+                self.setStatus(.done)
+                self.scheduleIdleReset(after: 0.8)
+            }
         }
     }
 

@@ -33,6 +33,13 @@ public class HotwordStore: ObservableObject {
         save()
     }
 
+    public func replaceAll(_ newWords: [String]) {
+        words = newWords.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        words.sort()
+        save()
+    }
+
     // MARK: - Private
 
     private func load() {

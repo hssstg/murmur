@@ -27,7 +27,7 @@ class FloatingWindow: NSWindow {
         guard let view = contentView as? FloatingView else { return }
         view.status = status
         view.text = text
-        view.levels = levels
+        view.targetLevels = levels
         view.needsDisplay = true
 
         if status == .idle {
@@ -54,36 +54,73 @@ class FloatingWindow: NSWindow {
 class FloatingView: NSView {
     var status: ASRStatus = .idle
     var text: String = ""
-    var levels: [Float] = Array(repeating: 0, count: 16)
+    var targetLevels: [Float] = Array(repeating: 0, count: 16)
+
+    // Smoothed overall amplitude (single scalar)
+    private var smoothAmp: CGFloat = 0.0
+    private var phase: Double = 0
+    private var animTimer: Timer?
 
     private let cornerRadius: CGFloat = 26
     private let pillHeight: CGFloat   = 48
-    private let barWidth: CGFloat     = 3
-    private let barSpacing: CGFloat   = 2.5
 
     override var isFlipped: Bool { false }
+
+    // MARK: - Animation lifecycle
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if window != nil { startAnimation() } else { stopAnimation() }
+    }
+
+    private func startAnimation() {
+        guard animTimer == nil else { return }
+        let t = Timer(timeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in
+            self?.animTick()
+        }
+        RunLoop.main.add(t, forMode: .common)
+        animTimer = t
+    }
+
+    private func stopAnimation() {
+        animTimer?.invalidate()
+        animTimer = nil
+    }
+
+    private func animTick() {
+        guard status == .listening || status == .processing else { return }
+
+        // RMS of incoming levels → single amplitude scalar
+        let rms = sqrt(targetLevels.map { $0 * $0 }.reduce(0, +) / Float(max(1, targetLevels.count)))
+        let target = CGFloat(max(0.08, rms * 3.2))
+        let α: CGFloat = target > smoothAmp ? 0.30 : 0.05   // fast rise, slow fall
+        smoothAmp += α * (target - smoothAmp)
+
+        phase += 0.055   // ~3.3 rad/s → one cycle ≈ 1.9 s
+        needsDisplay = true
+    }
+
+    // MARK: - Drawing
 
     override func draw(_ dirtyRect: NSRect) {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
 
-        // Pill background
         let pillRect = CGRect(
-            x: 0,
-            y: (bounds.height - pillHeight) / 2,
-            width: bounds.width,
-            height: pillHeight
+            x: 0, y: (bounds.height - pillHeight) / 2,
+            width: bounds.width, height: pillHeight
         )
-        let bgColor = NSColor(red: 0.08, green: 0.08, blue: 0.10, alpha: 0.93)
-        ctx.setFillColor(bgColor.cgColor)
-        let path = CGPath(roundedRect: pillRect, cornerWidth: cornerRadius, cornerHeight: cornerRadius, transform: nil)
-        ctx.addPath(path)
+
+        // Background pill
+        ctx.setFillColor(NSColor(red: 0.08, green: 0.08, blue: 0.10, alpha: 0.93).cgColor)
+        ctx.addPath(CGPath(roundedRect: pillRect, cornerWidth: cornerRadius,
+                           cornerHeight: cornerRadius, transform: nil))
         ctx.fillPath()
 
         switch status {
         case .listening:
-            drawWaveform(in: pillRect, ctx: ctx, alpha: 0.9)
+            drawSiriWave(in: pillRect, ctx: ctx, alpha: 1.0)
         case .processing:
-            drawWaveform(in: pillRect, ctx: ctx, alpha: 0.4)
+            drawSiriWave(in: pillRect, ctx: ctx, alpha: 0.45)
         case .polishing:
             drawText(in: pillRect, alpha: 0.5)
         case .done:
@@ -95,22 +132,74 @@ class FloatingView: NSView {
         }
     }
 
-    private func drawWaveform(in rect: CGRect, ctx: CGContext, alpha: CGFloat) {
-        let n = levels.count
-        let totalWidth = CGFloat(n) * barWidth + CGFloat(n - 1) * barSpacing
-        var x = rect.midX - totalWidth / 2
-        let centerY = rect.midY
+    // MARK: - Siri-style wave
 
-        for level in levels {
-            let barH = max(4, CGFloat(level) * rect.height * 0.72)
-            ctx.setFillColor(NSColor(red: 0.30, green: 0.72, blue: 1.0, alpha: alpha).cgColor)
-            let barRect = CGRect(x: x, y: centerY - barH / 2, width: barWidth, height: barH)
-            let bar = CGPath(roundedRect: barRect, cornerWidth: barWidth / 2, cornerHeight: barWidth / 2, transform: nil)
-            ctx.addPath(bar)
-            ctx.fillPath()
-            x += barWidth + barSpacing
-        }
+    private func drawSiriWave(in rect: CGRect, ctx: CGContext, alpha: CGFloat) {
+        let clipRect = rect.insetBy(dx: 0, dy: 2)
+        ctx.saveGState()
+        ctx.addPath(CGPath(roundedRect: clipRect, cornerWidth: cornerRadius,
+                           cornerHeight: cornerRadius, transform: nil))
+        ctx.clip()
+
+        let path = wavePath(in: rect)
+
+        // Wide diffuse glow — simulates light radiating from within the dark surface
+        ctx.setStrokeColor(NSColor(red: 0.50, green: 0.75, blue: 1.0, alpha: 0.12 * alpha).cgColor)
+        ctx.setLineWidth(10)
+        ctx.setLineCap(.round)
+        ctx.addPath(path)
+        ctx.strokePath()
+
+        // Mid layer
+        ctx.setStrokeColor(NSColor(red: 0.65, green: 0.85, blue: 1.0, alpha: 0.28 * alpha).cgColor)
+        ctx.setLineWidth(3)
+        ctx.addPath(path)
+        ctx.strokePath()
+
+        // Core — semi-transparent blue-white, not solid white
+        ctx.setStrokeColor(NSColor(red: 0.80, green: 0.92, blue: 1.0, alpha: 0.62 * alpha).cgColor)
+        ctx.setLineWidth(1.5)
+        ctx.addPath(path)
+        ctx.strokePath()
+
+        ctx.restoreGState()
     }
+
+    /// Smooth bezier path for the wave.
+    /// Uses two overlapping sine harmonics so the shape feels organic rather than mechanically periodic.
+    private func wavePath(in rect: CGRect) -> CGPath {
+        let N      = 80
+        let cy     = rect.midY
+        let maxAmp = rect.height * 0.26 * smoothAmp
+
+        var pts = [CGPoint]()
+        pts.reserveCapacity(N + 1)
+
+        for i in 0...N {
+            let t  = Double(i) / Double(N)
+            let x  = rect.minX + CGFloat(t) * rect.width
+
+            // Primary wave + subtle second harmonic for organic feel
+            let θ1 = t * .pi * 2.6 + phase
+            let θ2 = t * .pi * 5.2 + phase * 1.7 + 1.0
+            let y  = cy - maxAmp * (CGFloat(sin(θ1)) * 0.80 + CGFloat(sin(θ2)) * 0.20)
+
+            pts.append(CGPoint(x: x, y: y))
+        }
+
+        // Cardinal-spline via midpoint quadratic bezier
+        let path = CGMutablePath()
+        path.move(to: pts[0])
+        for i in 1..<pts.count - 1 {
+            let mid = CGPoint(x: (pts[i].x + pts[i+1].x) * 0.5,
+                              y: (pts[i].y + pts[i+1].y) * 0.5)
+            path.addQuadCurve(to: mid, control: pts[i])
+        }
+        path.addLine(to: pts[pts.count - 1])
+        return path
+    }
+
+    // MARK: - Other states
 
     private func drawText(in rect: CGRect, alpha: CGFloat) {
         let attrs: [NSAttributedString.Key: Any] = [
@@ -118,29 +207,27 @@ class FloatingView: NSView {
             .foregroundColor: NSColor(white: 1.0, alpha: alpha)
         ]
         let str = NSAttributedString(string: text, attributes: attrs)
-        let sz = str.size()
-        // Clamp text width
+        let sz  = str.size()
         let maxW = rect.width - 24
-        let drawRect = CGRect(
+        str.draw(in: CGRect(
             x: rect.midX - min(sz.width, maxW) / 2,
             y: rect.midY - sz.height / 2,
             width: min(sz.width, maxW),
             height: sz.height
-        )
-        str.draw(in: drawRect)
+        ))
     }
 
     private func drawConnecting(in rect: CGRect, ctx: CGContext) {
-        let dotR: CGFloat = 3.5
+        let dotR: CGFloat    = 3.5
         let spacing: CGFloat = 11
         let startX = rect.midX - spacing
         ctx.setFillColor(NSColor(white: 1.0, alpha: 0.5).cgColor)
         for i in 0..<3 {
-            let dot = CGRect(
+            ctx.fillEllipse(in: CGRect(
                 x: startX + CGFloat(i) * spacing - dotR,
-                y: rect.midY - dotR, width: dotR * 2, height: dotR * 2
-            )
-            ctx.fillEllipse(in: dot)
+                y: rect.midY - dotR,
+                width: dotR * 2, height: dotR * 2
+            ))
         }
     }
 }

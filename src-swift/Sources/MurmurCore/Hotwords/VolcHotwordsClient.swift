@@ -112,6 +112,34 @@ public enum VolcHotwordsClient {
 
     // MARK: - Public API
 
+    /// Fetch the current word list from Volcengine boosting table.
+    /// Returns nil if the table doesn't exist yet.
+    public static func fetchWords(ak: String, sk: String, appId: String, tableName: String) async throws -> [String]? {
+        let body = try JSONSerialization.data(withJSONObject: [
+            "AppID": appId, "PageNumber": 1, "PageSize": 50, "PreviewSize": 10000
+        ])
+        let resp = try await jsonCall(ak: ak, sk: sk, action: "ListBoostingTable", body: body)
+        guard let result = resp["Result"] as? [String: Any],
+              let tables = result["BoostingTables"] as? [[String: Any]] else {
+            fputs("[hotwords] fetchWords: no BoostingTables in Result\n", stderr)
+            return nil
+        }
+        guard let table = tables.first(where: { $0["BoostingTableName"] as? String == tableName }) else {
+            fputs("[hotwords] fetchWords: table '\(tableName)' not found\n", stderr)
+            return nil
+        }
+        if let preview = table["Preview"] as? [String] {
+            return preview
+        }
+        if let preview = table["Preview"] as? String {
+            return preview.components(separatedBy: "\n")
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+        }
+        fputs("[hotwords] fetchWords: Preview field missing or unexpected type\n", stderr)
+        return []
+    }
+
     /// Upload local words to Volcengine boosting table (create or update).
     public static func sync(ak: String, sk: String, appId: String, tableName: String, words: [String]) async throws -> String {
         // Filter words containing forbidden characters (Volcengine restriction)
