@@ -41,9 +41,10 @@ class FloatingWindow: NSWindow {
         let screen = NSScreen.screens.first(where: { NSMouseInRect(point, $0.frame, false) }) ?? NSScreen.main
         guard let screen = screen else { return }
         let sf = screen.visibleFrame
-        var origin = NSPoint(x: point.x - frame.width / 2, y: point.y + 20)
-        origin.x = max(sf.minX + 8, min(origin.x, sf.maxX - frame.width - 8))
-        origin.y = max(sf.minY + 8, min(origin.y, sf.maxY - frame.height - 8))
+        let origin = NSPoint(
+            x: sf.midX - frame.width / 2,
+            y: sf.minY + 80
+        )
         setFrameOrigin(origin)
     }
 }
