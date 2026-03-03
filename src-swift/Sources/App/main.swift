@@ -1,2 +1,6 @@
-// Placeholder — AppDelegate will be added in a later task
 import AppKit
+
+let app = NSApplication.shared
+let delegate = AppDelegate()
+app.delegate = delegate
+app.run()
