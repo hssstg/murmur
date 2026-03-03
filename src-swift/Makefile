@@ -24,7 +24,7 @@ run: build
 	pkill murmur 2>/dev/null; open $(APP_BUNDLE)
 
 test:
-	swift test
+	swift run MurmurTests
 
 clean:
 	swift package clean

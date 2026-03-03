@@ -1,9 +1,9 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.0
 import PackageDescription
 
 let package = Package(
     name: "murmur",
-    platforms: [.macOS(.v13)],
+    platforms: [.macOS(.v14)],
     targets: [
         .executableTarget(
             name: "murmur",
@@ -14,7 +14,7 @@ let package = Package(
             name: "MurmurCore",
             path: "Sources/MurmurCore"
         ),
-        .testTarget(
+        .executableTarget(
             name: "MurmurTests",
             dependencies: ["MurmurCore"],
             path: "Tests/MurmurTests"
