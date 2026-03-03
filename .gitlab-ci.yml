@@ -25,6 +25,7 @@ build-release:
     - cp .build/release/murmur ../dist/murmur.app/Contents/MacOS/
     - cp Info.plist ../dist/murmur.app/Contents/
     - cp murmur.icns ../dist/murmur.app/Contents/Resources/
+    - cp -r Resources/. ../dist/murmur.app/Contents/Resources/
     - codesign --force -s - --entitlements murmur.entitlements ../dist/murmur.app
     - cd ../dist && hdiutil create -volname "Murmur" -srcfolder murmur.app -ov -format UDZO murmur-latest.dmg
   artifacts:

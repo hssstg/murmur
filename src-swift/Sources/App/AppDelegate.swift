@@ -128,7 +128,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private func setupTray() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let btn = statusItem.button {
-            btn.image = NSImage(systemSymbolName: "mic", accessibilityDescription: "Murmur")
+            if let img = NSImage(named: "tray") {
+                img.isTemplate = true
+                btn.image = img
+            } else {
+                btn.image = NSImage(systemSymbolName: "mic", accessibilityDescription: "Murmur")
+            }
         }
         let menu = NSMenu()
         menu.addItem(NSMenuItem(title: "历史记录...", action: #selector(openHistory),   keyEquivalent: "h"))
