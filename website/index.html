@@ -559,7 +559,7 @@
   <a class="nav-logo" href="/">Murmur</a>
   <ul class="nav-links">
     <li><a href="#features">Features</a></li>
-    <li><a href="#compare">vs Typeless</a></li>
+    <li><a href="#compare">Compare</a></li>
     <li><a href="#how">How it works</a></li>
     <li><a href="/changelog">Changelog</a></li>
     <li><a href="#download" class="nav-dl">Download Free</a></li>
@@ -607,33 +607,33 @@
   <div class="features-grid">
     <article class="feat r">
       <div class="feat-num">01</div>
-      <h3>Push-to-Talk</h3>
-      <p>Hold any hotkey to record, release to transcribe. Result inserts directly at your cursor — no copy-paste, no window switching.</p>
+      <h3>Hold to speak</h3>
+      <p>Hold any hotkey to record, release to transcribe. Text appears instantly at your cursor — no copy-paste, no window switching.</p>
     </article>
     <article class="feat r">
       <div class="feat-num">02</div>
-      <h3>Works Everywhere</h3>
-      <p>Powered by CGEventPost — text is typed character-by-character into the active app. Works in terminals, code editors, browsers, anything.</p>
+      <h3>Works in any app</h3>
+      <p>Text is typed directly into whatever app you're using — browsers, notes, email, chat, code editors. No compatibility issues.</p>
     </article>
     <article class="feat r">
       <div class="feat-num">03</div>
-      <h3>LLM Polish</h3>
-      <p>Optionally connect any OpenAI-compatible API to auto-remove filler words, fix homophones, and clean up punctuation after transcription.</p>
+      <h3>AI cleanup</h3>
+      <p>Optionally connect an AI to automatically remove filler words, fix mishearing, and clean up punctuation after each transcription.</p>
     </article>
     <article class="feat r">
       <div class="feat-num">04</div>
       <h3>History &amp; Corrections</h3>
-      <p>All transcriptions are saved locally. Edit any entry, keep both the original and corrected version — the diff feeds your hotword AI.</p>
+      <p>All transcriptions are saved locally. Edit any entry and keep both the original and corrected version for your own reference.</p>
     </article>
     <article class="feat r">
       <div class="feat-num">05</div>
-      <h3>Smart Vocabulary</h3>
-      <p>AI scans your correction history and suggests domain-specific terms to add to your hotword list, improving accuracy over time.</p>
+      <h3>Gets smarter over time</h3>
+      <p>Murmur learns from your corrections and suggests words to add to your vocabulary, so it recognises your terms more accurately.</p>
     </article>
     <article class="feat r">
       <div class="feat-num">06</div>
-      <h3>Flexible Hotkeys</h3>
-      <p>Option, Control, CapsLock, F13–F15, mouse side buttons — map any key to push-to-talk. Remap a mouse button to Enter as a bonus.</p>
+      <h3>Your hotkey, your way</h3>
+      <p>Option, Control, CapsLock, F-keys, or mouse side buttons — map any key to push-to-talk. Optionally remap a mouse button to Enter.</p>
     </article>
   </div>
 </section>
@@ -667,32 +667,32 @@
           <td class="col-other"><span class="cross">Closed source</span></td>
         </tr>
         <tr>
-          <td>macOS app</td>
-          <td class="col-murmur"><span class="check">Native Swift + AppKit</span></td>
-          <td class="col-other">Electron (cross-platform)</td>
+          <td>Mac app</td>
+          <td class="col-murmur"><span class="check">Lightweight native app</span></td>
+          <td class="col-other">Cross-platform app</td>
         </tr>
         <tr>
-          <td>Push-to-talk hotkey</td>
+          <td>Push-to-talk</td>
           <td class="col-murmur"><span class="check">✓</span></td>
           <td class="col-other"><span class="check">✓</span></td>
         </tr>
         <tr>
-          <td>LLM cleanup</td>
-          <td class="col-murmur"><span class="check">✓ (bring your own API)</span></td>
-          <td class="col-other"><span class="check">✓ (built-in)</span></td>
+          <td>AI cleanup</td>
+          <td class="col-murmur"><span class="check">✓ Connect your own</span></td>
+          <td class="col-other"><span class="check">✓ Built-in</span></td>
         </tr>
         <tr>
-          <td>Works in terminal / VS Code</td>
-          <td class="col-murmur"><span class="check">✓ CGEventPost</span></td>
+          <td>Works in all apps</td>
+          <td class="col-murmur"><span class="check">✓ Including terminal &amp; editors</span></td>
           <td class="col-other">Varies</td>
         </tr>
         <tr>
-          <td>Voice data sent to cloud</td>
-          <td class="col-murmur"><span class="check">Your ASR endpoint only</span></td>
+          <td>Voice data privacy</td>
+          <td class="col-murmur"><span class="check">Sent only to your chosen service</span></td>
           <td class="col-other">Vendor servers</td>
         </tr>
         <tr>
-          <td>Self-hostable ASR</td>
+          <td>Use your own speech service</td>
           <td class="col-murmur"><span class="check">✓</span></td>
           <td class="col-other"><span class="cross">✗</span></td>
         </tr>
@@ -708,18 +708,18 @@
   <div class="steps">
     <article class="step r">
       <div class="step-num">STEP 01</div>
-      <h3>Add credentials</h3>
-      <p>Click the menu bar icon → Settings. Enter your Volcengine BigASR App ID and Access Token. Optionally add an OpenAI-compatible URL for LLM cleanup.</p>
+      <h3>Add your credentials</h3>
+      <p>Click the menu bar icon → Settings. Enter your speech recognition credentials. Optionally connect an AI assistant to clean up your text.</p>
     </article>
     <article class="step r">
       <div class="step-num">STEP 02</div>
-      <h3>Grant permission</h3>
-      <p>System Settings → Privacy &amp; Security → Accessibility. Add Murmur to the allow list. Required for hotkey monitoring and text insertion via CGEventPost.</p>
+      <h3>Allow access</h3>
+      <p>System Settings → Privacy &amp; Security → Accessibility. Add Murmur to the allow list so it can listen for your hotkey and type into other apps.</p>
     </article>
     <article class="step r">
       <div class="step-num">STEP 03</div>
       <h3>Hold and speak</h3>
-      <p>Place cursor in any text field. Hold <kbd class="kbd">⌥ Right Option</kbd>, speak, release. Transcribed text appears instantly — no extra clicks.</p>
+      <p>Place your cursor anywhere. Hold <kbd class="kbd">⌥ Right Option</kbd>, speak, release. Your words appear instantly — no extra clicks.</p>
     </article>
   </div>
 </section>
@@ -744,7 +744,7 @@
       <ul class="req-list">
         <li>macOS 14 Sonoma or later</li>
         <li>Apple Silicon or Intel Mac</li>
-        <li>Volcengine BigASR account (free tier available)</li>
+        <li>Speech recognition account (free to start)</li>
         <li>Accessibility permission</li>
         <li>Microphone permission</li>
       </ul>
@@ -792,7 +792,7 @@
     }
     draw();
 
-    const labels = ['Listening…', 'Processing…', 'open pull request', 'Polishing…', 'Inserted ✓'];
+    const labels = ['Listening…', 'Processing…', 'Text inserted ✓', 'AI cleanup…', 'Done ✓'];
     const el = document.getElementById('pill-label');
     let i = 0;
     setInterval(() => {
