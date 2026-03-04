@@ -251,22 +251,17 @@
     <!-- Unreleased -->
     <div class="release">
       <div class="release-meta">
-        <div class="release-version unreleased">Unreleased</div>
+        <div class="release-version unreleased">Coming soon</div>
         <div class="release-date">In progress</div>
       </div>
       <div class="release-body">
         <div class="release-section">
-          <div class="release-section-label">Added</div>
           <ul class="release-items">
-            <li>AI hotword extraction — automatically suggests new hotwords from recent transcription history using LLM</li>
-            <li>Usage statistics window — 30-day usage chart, 24-hour distribution, correction rate (Swift Charts)</li>
-            <li>History correction — edit individual records, keeping original and corrected versions</li>
-            <li>Hotword tag cloud — replaced list layout with FlowLayout tag cloud; batch-add AI suggestions</li>
-            <li>Auto-sync hotwords from Volcengine on window open</li>
-            <li>Siri-style waveform animation — 60fps smooth single-line waveform with exponential smoothing</li>
-            <li>ESC closes all auxiliary windows</li>
-            <li>Empty transcription fast-hide — skip done state and return to idle if no content</li>
-            <li>GitLab CI/CD — macOS runner with automated tests and release builds</li>
+            <li>AI suggests words to add to your vocabulary based on what you say and correct</li>
+            <li>Usage dashboard — see how much you've dictated over the past 30 days</li>
+            <li>Edit past transcriptions and keep both the original and your correction</li>
+            <li>Smooth waveform animation while listening</li>
+            <li>Vocabulary syncs automatically when you open the hotword window</li>
           </ul>
         </div>
       </div>
@@ -279,19 +274,15 @@
         <div class="release-date">March 3, 2026</div>
       </div>
       <div class="release-body">
-        <p class="release-summary">Complete rewrite in native Swift, replacing the Tauri / React / Rust stack.</p>
+        <p class="release-summary">Rebuilt from scratch as a lightweight native Mac app. Faster, smaller, and works in every app including terminals and code editors.</p>
         <div class="release-section">
-          <div class="release-section-label">Added</div>
           <ul class="release-items">
-            <li>Pure Swift + AppKit implementation — removed Electron/Tauri dependency</li>
-            <li>Floating window never steals focus; text inserted via CGEventPost at current cursor</li>
-            <li>AVAudioEngine 16 kHz PCM audio capture</li>
-            <li>CGEventTap hotkey listener — supports Option, Control, CapsLock, F-keys, and mouse buttons</li>
-            <li>Mouse side button → Enter remapping</li>
-            <li>LLM polish via OpenAI-compatible API</li>
-            <li>Hotword library management with Volcengine self-learning platform sync</li>
-            <li>History persistence (JSON, up to 1 000 entries)</li>
-            <li>Tray menu — history, hotwords, usage stats, settings</li>
+            <li>Text appears instantly at your cursor — no window switching, no copy-paste</li>
+            <li>Optional AI cleanup to remove filler words and fix mishearing</li>
+            <li>Custom vocabulary to improve accuracy for your own words and names</li>
+            <li>All transcription history saved locally on your Mac</li>
+            <li>Menu bar icon with quick access to history, vocabulary, and settings</li>
+            <li>Remap a mouse button to Enter for quick confirmation</li>
           </ul>
         </div>
       </div>
@@ -304,7 +295,7 @@
         <div class="release-date">February 24, 2026</div>
       </div>
       <div class="release-body">
-        <p class="release-summary">Initial proof-of-concept built on Tauri + React + Rust. Deprecated.</p>
+        <p class="release-summary">First working version. Proof of concept.</p>
       </div>
     </div>
 
