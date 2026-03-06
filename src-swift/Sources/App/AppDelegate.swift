@@ -8,6 +8,22 @@ private class EscapableWindow: NSWindow {
     override func cancelOperation(_ sender: Any?) { close() }
 }
 
+// Wrapper that holds config as @State so SwiftUI re-renders immediately on
+// every picker/toggle change, without waiting for an explicit Save press.
+@MainActor
+private struct SettingsRoot: View {
+    @State var config: AppConfig
+    let onSave: () -> Void
+    let onConfigChange: (AppConfig) -> Void
+
+    var body: some View {
+        SettingsView(
+            config: Binding(get: { config }, set: { config = $0; onConfigChange($0) }),
+            onSave: onSave
+        )
+    }
+}
+
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var floatingWindow: FloatingWindow!
@@ -224,11 +240,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             NSApp.activate(ignoringOtherApps: true)
             return
         }
-        let view = SettingsView(
-            config: Binding(
-                get:  { self.configStore.config },
-                set:  { self.configStore.config = $0 }
-            ),
+        let root = SettingsRoot(
+            config: configStore.config,
             onSave: { [weak self] in
                 guard let self = self else { return }
                 try? self.configStore.save()
@@ -238,10 +251,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     self.keyboard.stop()
                     self.setupKeyboard()
                 }
+            },
+            onConfigChange: { [weak self] newConfig in
+                self?.configStore.config = newConfig
             }
         )
         let hosting = NSHostingController(
-            rootView: NavigationStack { view }
+            rootView: NavigationStack { root }
                 .frame(minWidth: 560, minHeight: 620)
         )
         let win = EscapableWindow(contentViewController: hosting)
