@@ -186,7 +186,7 @@ def update_boosting_table(ak, sk, app_id, table_name, hot_words):
 
     # 过滤含特殊字符的词（火山引擎不允许 / 等符号）
     import re
-    hot_words = [w for w in hot_words if not re.search(r'[/\\|<>]', w)]
+    hot_words = [w for w in hot_words if not re.search(r"[/\\|<>']", w)]
     file_bytes = '\n'.join(hot_words).encode('utf-8')
     result = volc_multipart_call(ak, sk, action, fields, file_bytes)
     meta = result.get('ResponseMetadata', {})
