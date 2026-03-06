@@ -7,12 +7,12 @@ enum TimeFilter: String, CaseIterable {
     case month  = "month"
     case all    = "all"
 
-    var displayName: LocalizedStringKey {
+    var displayName: String {
         switch self {
-        case .today: "history.filter.today"
-        case .week:  "history.filter.week"
-        case .month: "history.filter.month"
-        case .all:   "history.filter.all"
+        case .today: L("history.filter.today")
+        case .week:  L("history.filter.week")
+        case .month: L("history.filter.month")
+        case .all:   L("history.filter.all")
         }
     }
 
@@ -62,20 +62,20 @@ struct HistoryView: View {
                 Button(role: .destructive) { showClearConfirm = true } label: {
                     Image(systemName: "trash")
                 }
-                .help("history.clear.help")
-                .confirmationDialog("history.clear.confirm", isPresented: $showClearConfirm) {
-                    Button("history.clear.action", role: .destructive) { store.clear() }
+                .help(Text(L("history.clear.help")))
+                .confirmationDialog(Text(L("history.clear.confirm")), isPresented: $showClearConfirm) {
+                    Button(L("history.clear.action"), role: .destructive) { store.clear() }
                 }
             }
             .padding(.horizontal).padding(.vertical, 10)
 
             // Stats
             HStack(spacing: 20) {
-                statItem(icon: "text.bubble",            value: "\(filtered.count)", label: "history.stat.entries")
-                statItem(icon: "character.cursor.ibeam", value: "\(totalChars)",     label: "history.stat.chars")
+                statItem(icon: "text.bubble",            value: "\(filtered.count)", label: L("history.stat.entries"))
+                statItem(icon: "character.cursor.ibeam", value: "\(totalChars)",     label: L("history.stat.chars"))
                 if let (day, count) = mostActiveDay {
                     statItem(icon: "flame", value: day,
-                             label: LocalizedStringKey(String(format: String(localized: "history.stat.most_active"), count)))
+                             label: String(format: L("history.stat.most_active"), count))
                 }
                 Spacer()
             }
@@ -89,7 +89,7 @@ struct HistoryView: View {
                     VStack(spacing: 8) {
                         Image(systemName: "clock.badge.questionmark")
                             .font(.system(size: 36)).foregroundStyle(.tertiary)
-                        Text("history.empty").foregroundStyle(.secondary)
+                        Text(L("history.empty")).foregroundStyle(.secondary)
                     }
                     Spacer() }
                 Spacer()
@@ -110,7 +110,7 @@ struct HistoryView: View {
     }
 
     @ViewBuilder
-    private func statItem(icon: String, value: String, label: LocalizedStringKey) -> some View {
+    private func statItem(icon: String, value: String, label: String) -> some View {
         HStack(spacing: 4) {
             Image(systemName: icon).foregroundStyle(.secondary)
             Text(value).fontWeight(.medium)
@@ -139,7 +139,7 @@ private struct HistoryRowView: View {
 
                 if entry.edited != nil {
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text("history.entry.original_label")
+                        Text(L("history.entry.original_label"))
                             .font(.caption2)
                             .padding(.horizontal, 4).padding(.vertical, 1)
                             .background(.secondary.opacity(0.15))
@@ -167,7 +167,7 @@ private struct HistoryRowView: View {
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
-            .help("history.entry.edit.help")
+            .help(Text(L("history.entry.edit.help")))
             .popover(isPresented: $showPopover, arrowEdge: .trailing) {
                 EditPopover(
                     text: $editingText,
@@ -190,7 +190,7 @@ private struct EditPopover: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("history.editpopover.title")
+            Text(L("history.editpopover.title"))
                 .font(.headline)
 
             TextEditor(text: $text)
@@ -202,9 +202,9 @@ private struct EditPopover: View {
 
             HStack {
                 Spacer()
-                Button("common.cancel", action: onCancel)
+                Button(L("common.cancel"), action: onCancel)
                     .keyboardShortcut(.cancelAction)
-                Button("common.save", action: onCommit)
+                Button(L("common.save"), action: onCommit)
                     .keyboardShortcut(.defaultAction)
                     .buttonStyle(.borderedProminent)
             }

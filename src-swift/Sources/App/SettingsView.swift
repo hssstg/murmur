@@ -6,21 +6,21 @@ struct SettingsView: View {
     @Binding var config: AppConfig
     var onSave: () -> Void
 
-    @State private var saveLabel: LocalizedStringKey = "common.save"
+    @State private var saveLabel: String = L("common.save")
 
     var body: some View {
         TabView {
             AsrTab(config: $config)
-                .tabItem { Label("settings.tab.asr", systemImage: "waveform") }
+                .tabItem { Label(L("settings.tab.asr"), systemImage: "waveform") }
 
             HotkeyTab(config: $config)
-                .tabItem { Label("settings.tab.hotkey", systemImage: "keyboard") }
+                .tabItem { Label(L("settings.tab.hotkey"), systemImage: "keyboard") }
 
             LLMTab(config: $config)
-                .tabItem { Label("settings.tab.llm", systemImage: "sparkles") }
+                .tabItem { Label(L("settings.tab.llm"), systemImage: "sparkles") }
 
             HotwordsTab(config: $config)
-                .tabItem { Label("settings.tab.hotwords", systemImage: "text.book.closed") }
+                .tabItem { Label(L("settings.tab.hotwords"), systemImage: "text.book.closed") }
         }
         .padding(20)
         .frame(width: 560, height: 560)
@@ -37,9 +37,9 @@ struct SettingsView: View {
             ToolbarItem(placement: .confirmationAction) {
                 Button(saveLabel) {
                     onSave()
-                    saveLabel = "common.saved"
+                    saveLabel = L("common.saved")
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                        saveLabel = "common.save"
+                        saveLabel = L("common.save")
                     }
                 }
             }
@@ -60,7 +60,7 @@ private struct AsrTab: View {
 
     var body: some View {
         Form {
-            Section("settings.asr.section") {
+            Section(L("settings.asr.section")) {
                 LabeledContent("App ID") {
                     TextField("", text: $config.api_app_id)
                         .multilineTextAlignment(.trailing)
@@ -70,25 +70,25 @@ private struct AsrTab: View {
                 }
                 LabeledContent("Resource ID") {
                     TextField("", text: $config.api_resource_id)
-                        .help("settings.asr.resourceid.help")
+                        .help(Text(L("settings.asr.resourceid.help")))
                         .multilineTextAlignment(.trailing)
                 }
             }
 
-            Section("settings.asr2.section") {
-                Picker("settings.asr.language", selection: $config.asr_language) {
+            Section(L("settings.asr2.section")) {
+                Picker(L("settings.asr.language"), selection: $config.asr_language) {
                     ForEach(langOptions, id: \.1) { Text($0.0).tag($0.1) }
                 }
-                LabeledContent("settings.asr.vocabulary") {
+                LabeledContent(L("settings.asr.vocabulary")) {
                     TextField("", text: $config.asr_vocabulary)
                         .multilineTextAlignment(.trailing)
                 }
-                Toggle("settings.asr.punc", isOn: $config.asr_enable_punc)
-                Toggle("settings.asr.itn", isOn: $config.asr_enable_itn)
-                Toggle("settings.asr.ddc", isOn: $config.asr_enable_ddc)
+                Toggle(L("settings.asr.punc"), isOn: $config.asr_enable_punc)
+                Toggle(L("settings.asr.itn"), isOn: $config.asr_enable_itn)
+                Toggle(L("settings.asr.ddc"), isOn: $config.asr_enable_ddc)
             }
 
-            Section("settings.mic.section") {
+            Section(L("settings.mic.section")) {
                 MicrophonePicker(selected: $config.microphone)
             }
         }
@@ -113,7 +113,7 @@ private struct HotkeyTab: View {
     ]
 
     let mouseEnterOptions: [(String, String?)] = [
-        (String(localized: "common.disabled"), nil),
+        (L("common.disabled"), nil),
         ("Middle",     "MouseMiddle"),
         ("Side Back",  "MouseSideBack"),
         ("Side Fwd",   "MouseSideFwd"),
@@ -122,20 +122,20 @@ private struct HotkeyTab: View {
     var body: some View {
         Form {
             Section {
-                Picker("settings.hotkey.label", selection: $config.hotkey) {
+                Picker(L("settings.hotkey.label"), selection: $config.hotkey) {
                     ForEach(hotkeyOptions, id: \.1) { Text($0.0).tag($0.1) }
                 }
             } footer: {
-                Text("settings.hotkey.footer")
+                Text(L("settings.hotkey.footer"))
                     .foregroundStyle(.secondary)
             }
 
             Section {
-                Picker("settings.mouseenter.label", selection: $config.mouse_enter_btn) {
+                Picker(L("settings.mouseenter.label"), selection: $config.mouse_enter_btn) {
                     ForEach(mouseEnterOptions, id: \.1) { Text($0.0).tag($0.1) }
                 }
             } footer: {
-                Text("settings.mouseenter.footer")
+                Text(L("settings.mouseenter.footer"))
                     .foregroundStyle(.secondary)
             }
         }
@@ -152,18 +152,18 @@ private struct LLMTab: View {
     var body: some View {
         Form {
             Section {
-                Toggle("settings.llmpolish.enable", isOn: $config.llm_enabled)
+                Toggle(L("settings.llmpolish.enable"), isOn: $config.llm_enabled)
             } footer: {
-                Text("settings.llmpolish.footer")
+                Text(L("settings.llmpolish.footer"))
                     .foregroundStyle(.secondary)
             }
 
-            Section("settings.llm.section") {
+            Section(L("settings.llm.section")) {
                 LabeledContent("Base URL") {
                     TextField("", text: $config.llm_base_url)
                         .multilineTextAlignment(.trailing)
                 }
-                LabeledContent("settings.llm.model") {
+                LabeledContent(L("settings.llm.model")) {
                     TextField("", text: $config.llm_model)
                         .multilineTextAlignment(.trailing)
                 }
@@ -172,13 +172,13 @@ private struct LLMTab: View {
                 }
             }
 
-            Section("settings.llm.prompt.section") {
+            Section(L("settings.llm.prompt.section")) {
                 TextEditor(text: $config.llm_prompt)
                     .font(.system(.body, design: .monospaced))
                     .frame(minHeight: 200)
                 HStack {
                     Spacer()
-                    Button("settings.llm.prompt.reset") {
+                    Button(L("settings.llm.prompt.reset")) {
                         config.llm_prompt = defaultLLMPrompt
                     }
                     .buttonStyle(.borderless)
@@ -207,7 +207,7 @@ private struct HotwordsTab: View {
                     SecretField("", text: $config.hotwords_sk, show: $showSk)
                 }
             } footer: {
-                Text("settings.hotwords.footer")
+                Text(L("settings.hotwords.footer"))
                     .foregroundStyle(.secondary)
             }
         }
@@ -255,8 +255,8 @@ struct MicrophonePicker: View {
     @State private var devices: [(id: String, name: String)] = []
 
     var body: some View {
-        Picker("settings.mic.label", selection: $selected) {
-            Text("common.system_default").tag(Optional<String>.none)
+        Picker(L("settings.mic.label"), selection: $selected) {
+            Text(L("common.system_default")).tag(Optional<String>.none)
             ForEach(devices, id: \.id) { device in
                 Text(device.name).tag(Optional(device.id))
             }

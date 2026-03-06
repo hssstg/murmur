@@ -58,10 +58,10 @@ struct HotwordsView: View {
 
             // Add word bar
             HStack {
-                TextField("hotwords.add.placeholder", text: $newWord)
+                TextField(L("hotwords.add.placeholder"), text: $newWord)
                     .textFieldStyle(.roundedBorder)
                     .onSubmit { addWord() }
-                Button("hotwords.add.button", action: addWord)
+                Button(L("hotwords.add.button"), action: addWord)
                     .disabled(newWord.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
             .padding()
@@ -75,7 +75,7 @@ struct HotwordsView: View {
                     Spacer()
                     VStack(spacing: 8) {
                         ProgressView()
-                        Text("hotwords.fetching").foregroundStyle(.secondary)
+                        Text(L("hotwords.fetching")).foregroundStyle(.secondary)
                     }
                     Spacer()
                 }
@@ -87,7 +87,7 @@ struct HotwordsView: View {
                     VStack(spacing: 8) {
                         Image(systemName: "textformat.abc")
                             .font(.system(size: 36)).foregroundStyle(.tertiary)
-                        Text("hotwords.empty").foregroundStyle(.secondary)
+                        Text(L("hotwords.empty")).foregroundStyle(.secondary)
                     }
                     Spacer()
                 }
@@ -108,11 +108,11 @@ struct HotwordsView: View {
                 Divider()
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("hotwords.suggestions.title")
+                        Text(L("hotwords.suggestions.title"))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Spacer()
-                        Button("hotwords.suggestions.addall") {
+                        Button(L("hotwords.suggestions.addall")) {
                             for w in suggestions { store.add(w) }
                             suggestions = []
                         }
@@ -137,7 +137,7 @@ struct HotwordsView: View {
 
             // Footer
             HStack {
-                Text(String(format: String(localized: "hotwords.count"), store.words.count))
+                Text(String(format: L("hotwords.count"), store.words.count))
                     .font(.caption).foregroundStyle(.secondary)
                 if !extractError.isEmpty {
                     Text(extractError)
@@ -149,10 +149,10 @@ struct HotwordsView: View {
                     Task { await extractHotwords() }
                 } label: {
                     if extracting { ProgressView().controlSize(.small) }
-                    else { Label("hotwords.extract.button", systemImage: "wand.and.stars") }
+                    else { Label(L("hotwords.extract.button"), systemImage: "wand.and.stars") }
                 }
                 .disabled(extracting || config.llm_base_url.isEmpty)
-                .help(config.llm_base_url.isEmpty ? "hotwords.extract.help.nollm" : "hotwords.extract.help")
+                .help(Text(config.llm_base_url.isEmpty ? L("hotwords.extract.help.nollm") : L("hotwords.extract.help")))
                 Spacer()
                 if !syncStatus.isEmpty {
                     Text(syncStatus)
@@ -164,10 +164,10 @@ struct HotwordsView: View {
                     Task { await syncToVolcengine() }
                 } label: {
                     if syncing { ProgressView().controlSize(.small) }
-                    else { Label("hotwords.sync.button", systemImage: "arrow.triangle.2.circlepath") }
+                    else { Label(L("hotwords.sync.button"), systemImage: "arrow.triangle.2.circlepath") }
                 }
                 .disabled(syncing || store.words.isEmpty || config.hotwords_ak.isEmpty || config.hotwords_sk.isEmpty)
-                .help(config.hotwords_ak.isEmpty ? "hotwords.sync.help.nocreds" : "hotwords.sync.help")
+                .help(Text(config.hotwords_ak.isEmpty ? L("hotwords.sync.help.nocreds") : L("hotwords.sync.help")))
             }
             .padding()
         }
@@ -194,13 +194,13 @@ struct HotwordsView: View {
                 appId: config.api_app_id, tableName: config.asr_vocabulary,
                 words: store.words)
             if let count = wordCount {
-                syncStatus = String(format: String(localized: "hotwords.sync.success"), count)
+                syncStatus = String(format: L("hotwords.sync.success"), count)
             } else {
-                syncStatus = String(localized: "hotwords.sync.success.unknown")
+                syncStatus = L("hotwords.sync.success.unknown")
             }
         } catch {
             syncIsError = true
-            syncStatus = String(format: String(localized: "hotwords.sync.error"), error.localizedDescription)
+            syncStatus = String(format: L("hotwords.sync.error"), error.localizedDescription)
         }
     }
 
@@ -212,14 +212,14 @@ struct HotwordsView: View {
                 ak: config.hotwords_ak, sk: config.hotwords_sk,
                 appId: config.api_app_id, tableName: config.asr_vocabulary)
             else {
-                syncStatus = String(localized: "hotwords.fetch.nolist")
+                syncStatus = L("hotwords.fetch.nolist")
                 return
             }
             store.replaceAll(words)
-            syncStatus = String(format: String(localized: "hotwords.fetch.success"), words.count)
+            syncStatus = String(format: L("hotwords.fetch.success"), words.count)
         } catch {
             syncIsError = true
-            syncStatus = String(format: String(localized: "hotwords.fetch.error"), error.localizedDescription)
+            syncStatus = String(format: L("hotwords.fetch.error"), error.localizedDescription)
         }
     }
 
@@ -233,7 +233,7 @@ struct HotwordsView: View {
             return (e.text, edited)
         }
         guard !recentTexts.isEmpty || !corrections.isEmpty else {
-            extractError = String(localized: "hotwords.extract.nohistory")
+            extractError = L("hotwords.extract.nohistory")
             return
         }
         extracting = true; extractError = ""
@@ -246,9 +246,9 @@ struct HotwordsView: View {
                 config: config
             )
             suggestions = words
-            if words.isEmpty { extractError = String(localized: "hotwords.extract.nowords") }
+            if words.isEmpty { extractError = L("hotwords.extract.nowords") }
         } catch {
-            extractError = String(format: String(localized: "hotwords.extract.error"), error.localizedDescription)
+            extractError = String(format: L("hotwords.extract.error"), error.localizedDescription)
         }
     }
 }
@@ -269,14 +269,14 @@ private struct SuggestionChip: View {
                     .foregroundStyle(.blue)
             }
             .buttonStyle(.plain)
-            .help("hotwords.suggestions.add.help")
+            .help(Text(L("hotwords.suggestions.add.help")))
             Button { onDismiss() } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
-            .help("hotwords.suggestions.dismiss.help")
+            .help(Text(L("hotwords.suggestions.dismiss.help")))
         }
         .padding(.horizontal, 9)
         .padding(.vertical, 5)
