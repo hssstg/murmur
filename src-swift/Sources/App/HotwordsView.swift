@@ -46,6 +46,7 @@ struct HotwordsView: View {
 
     @State private var newWord      = ""
     @State private var syncStatus   = ""
+    @State private var syncIsError  = false
     @State private var syncing      = false
     @State private var fetching     = false
     @State private var extracting   = false
@@ -57,10 +58,10 @@ struct HotwordsView: View {
 
             // Add word bar
             HStack {
-                TextField("添加热词...", text: $newWord)
+                TextField("hotwords.add.placeholder", text: $newWord)
                     .textFieldStyle(.roundedBorder)
                     .onSubmit { addWord() }
-                Button("添加", action: addWord)
+                Button("hotwords.add.button", action: addWord)
                     .disabled(newWord.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
             .padding()
@@ -74,7 +75,7 @@ struct HotwordsView: View {
                     Spacer()
                     VStack(spacing: 8) {
                         ProgressView()
-                        Text("从火山引擎加载中...").foregroundStyle(.secondary)
+                        Text("hotwords.fetching").foregroundStyle(.secondary)
                     }
                     Spacer()
                 }
@@ -86,7 +87,7 @@ struct HotwordsView: View {
                     VStack(spacing: 8) {
                         Image(systemName: "textformat.abc")
                             .font(.system(size: 36)).foregroundStyle(.tertiary)
-                        Text("暂无热词").foregroundStyle(.secondary)
+                        Text("hotwords.empty").foregroundStyle(.secondary)
                     }
                     Spacer()
                 }
@@ -107,11 +108,11 @@ struct HotwordsView: View {
                 Divider()
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("AI 建议热词")
+                        Text("hotwords.suggestions.title")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Spacer()
-                        Button("全部添加") {
+                        Button("hotwords.suggestions.addall") {
                             for w in suggestions { store.add(w) }
                             suggestions = []
                         }
@@ -136,7 +137,7 @@ struct HotwordsView: View {
 
             // Footer
             HStack {
-                Text("\(store.words.count) 个热词")
+                Text(String(format: String(localized: "hotwords.count"), store.words.count))
                     .font(.caption).foregroundStyle(.secondary)
                 if !extractError.isEmpty {
                     Text(extractError)
@@ -148,25 +149,25 @@ struct HotwordsView: View {
                     Task { await extractHotwords() }
                 } label: {
                     if extracting { ProgressView().controlSize(.small) }
-                    else { Label("AI 提取热词", systemImage: "wand.and.stars") }
+                    else { Label("hotwords.extract.button", systemImage: "wand.and.stars") }
                 }
                 .disabled(extracting || config.llm_base_url.isEmpty)
-                .help(config.llm_base_url.isEmpty ? "请先在设置中配置大模型" : "根据历史修正记录 AI 提取热词")
+                .help(config.llm_base_url.isEmpty ? "hotwords.extract.help.nollm" : "hotwords.extract.help")
                 Spacer()
                 if !syncStatus.isEmpty {
                     Text(syncStatus)
                         .font(.caption)
-                        .foregroundStyle(syncStatus.hasPrefix("失败") || syncStatus.hasPrefix("加载失败") ? .red : .green)
+                        .foregroundStyle(syncIsError ? .red : .green)
                         .lineLimit(1)
                 }
                 Button {
                     Task { await syncToVolcengine() }
                 } label: {
                     if syncing { ProgressView().controlSize(.small) }
-                    else { Label("同步到火山引擎", systemImage: "arrow.triangle.2.circlepath") }
+                    else { Label("hotwords.sync.button", systemImage: "arrow.triangle.2.circlepath") }
                 }
                 .disabled(syncing || store.words.isEmpty || config.hotwords_ak.isEmpty || config.hotwords_sk.isEmpty)
-                .help(config.hotwords_ak.isEmpty ? "请先在设置中填写热词 AK/SK" : "上传词表到火山引擎自学习平台")
+                .help(config.hotwords_ak.isEmpty ? "hotwords.sync.help.nocreds" : "hotwords.sync.help")
             }
             .padding()
         }
@@ -185,30 +186,40 @@ struct HotwordsView: View {
     }
 
     private func syncToVolcengine() async {
-        syncing = true; syncStatus = ""
+        syncing = true; syncStatus = ""; syncIsError = false
         defer { syncing = false }
         do {
-            syncStatus = try await VolcHotwordsClient.sync(
+            let wordCount = try await VolcHotwordsClient.sync(
                 ak: config.hotwords_ak, sk: config.hotwords_sk,
                 appId: config.api_app_id, tableName: config.asr_vocabulary,
                 words: store.words)
+            if let count = wordCount {
+                syncStatus = String(format: String(localized: "hotwords.sync.success"), count)
+            } else {
+                syncStatus = String(localized: "hotwords.sync.success.unknown")
+            }
         } catch {
-            syncStatus = "失败：\(error.localizedDescription)"
+            syncIsError = true
+            syncStatus = String(format: String(localized: "hotwords.sync.error"), error.localizedDescription)
         }
     }
 
     private func fetchFromVolcengine() async {
-        fetching = true; syncStatus = ""
+        fetching = true; syncStatus = ""; syncIsError = false
         defer { fetching = false }
         do {
             guard let words = try await VolcHotwordsClient.fetchWords(
                 ak: config.hotwords_ak, sk: config.hotwords_sk,
                 appId: config.api_app_id, tableName: config.asr_vocabulary)
-            else { syncStatus = "词表不存在（未同步过）"; return }
+            else {
+                syncStatus = String(localized: "hotwords.fetch.nolist")
+                return
+            }
             store.replaceAll(words)
-            syncStatus = "已从火山加载 \(words.count) 个词"
+            syncStatus = String(format: String(localized: "hotwords.fetch.success"), words.count)
         } catch {
-            syncStatus = "加载失败：\(error.localizedDescription)"
+            syncIsError = true
+            syncStatus = String(format: String(localized: "hotwords.fetch.error"), error.localizedDescription)
         }
     }
 
@@ -222,7 +233,7 @@ struct HotwordsView: View {
             return (e.text, edited)
         }
         guard !recentTexts.isEmpty || !corrections.isEmpty else {
-            extractError = "暂无历史记录"
+            extractError = String(localized: "hotwords.extract.nohistory")
             return
         }
         extracting = true; extractError = ""
@@ -235,9 +246,9 @@ struct HotwordsView: View {
                 config: config
             )
             suggestions = words
-            if words.isEmpty { extractError = "未发现新热词" }
+            if words.isEmpty { extractError = String(localized: "hotwords.extract.nowords") }
         } catch {
-            extractError = "提取失败：\(error.localizedDescription)"
+            extractError = String(format: String(localized: "hotwords.extract.error"), error.localizedDescription)
         }
     }
 }
@@ -258,14 +269,14 @@ private struct SuggestionChip: View {
                     .foregroundStyle(.blue)
             }
             .buttonStyle(.plain)
-            .help("添加到热词库")
+            .help("hotwords.suggestions.add.help")
             Button { onDismiss() } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
-            .help("忽略")
+            .help("hotwords.suggestions.dismiss.help")
         }
         .padding(.horizontal, 9)
         .padding(.vertical, 5)

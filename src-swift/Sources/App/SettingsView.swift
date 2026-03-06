@@ -6,21 +6,21 @@ struct SettingsView: View {
     @Binding var config: AppConfig
     var onSave: () -> Void
 
-    @State private var saveLabel = "保存"
+    @State private var saveLabel: LocalizedStringKey = "common.save"
 
     var body: some View {
         TabView {
             AsrTab(config: $config)
-                .tabItem { Label("语音识别", systemImage: "waveform") }
+                .tabItem { Label("settings.tab.asr", systemImage: "waveform") }
 
             HotkeyTab(config: $config)
-                .tabItem { Label("快捷键", systemImage: "keyboard") }
+                .tabItem { Label("settings.tab.hotkey", systemImage: "keyboard") }
 
             LLMTab(config: $config)
-                .tabItem { Label("LLM 润色", systemImage: "sparkles") }
+                .tabItem { Label("settings.tab.llm", systemImage: "sparkles") }
 
             HotwordsTab(config: $config)
-                .tabItem { Label("热词凭证", systemImage: "text.book.closed") }
+                .tabItem { Label("settings.tab.hotwords", systemImage: "text.book.closed") }
         }
         .padding(20)
         .frame(width: 560, height: 560)
@@ -37,9 +37,9 @@ struct SettingsView: View {
             ToolbarItem(placement: .confirmationAction) {
                 Button(saveLabel) {
                     onSave()
-                    saveLabel = "已保存 ✓"
+                    saveLabel = "common.saved"
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                        saveLabel = "保存"
+                        saveLabel = "common.save"
                     }
                 }
             }
@@ -60,7 +60,7 @@ private struct AsrTab: View {
 
     var body: some View {
         Form {
-            Section("凭证") {
+            Section("settings.asr.section") {
                 LabeledContent("App ID") {
                     TextField("", text: $config.api_app_id)
                         .multilineTextAlignment(.trailing)
@@ -70,25 +70,25 @@ private struct AsrTab: View {
                 }
                 LabeledContent("Resource ID") {
                     TextField("", text: $config.api_resource_id)
-                        .help("默认：volc.bigasr.sauc.duration")
+                        .help("settings.asr.resourceid.help")
                         .multilineTextAlignment(.trailing)
                 }
             }
 
-            Section("识别选项") {
-                Picker("语言", selection: $config.asr_language) {
+            Section("settings.asr2.section") {
+                Picker("settings.asr.language", selection: $config.asr_language) {
                     ForEach(langOptions, id: \.1) { Text($0.0).tag($0.1) }
                 }
-                LabeledContent("热词表名") {
+                LabeledContent("settings.asr.vocabulary") {
                     TextField("", text: $config.asr_vocabulary)
                         .multilineTextAlignment(.trailing)
                 }
-                Toggle("标点符号", isOn: $config.asr_enable_punc)
-                Toggle("数字转换 (ITN)", isOn: $config.asr_enable_itn)
-                Toggle("顺滑处理 (DDC)", isOn: $config.asr_enable_ddc)
+                Toggle("settings.asr.punc", isOn: $config.asr_enable_punc)
+                Toggle("settings.asr.itn", isOn: $config.asr_enable_itn)
+                Toggle("settings.asr.ddc", isOn: $config.asr_enable_ddc)
             }
 
-            Section("麦克风") {
+            Section("settings.mic.section") {
                 MicrophonePicker(selected: $config.microphone)
             }
         }
@@ -113,7 +113,7 @@ private struct HotkeyTab: View {
     ]
 
     let mouseEnterOptions: [(String, String?)] = [
-        ("禁用", nil),
+        (String(localized: "common.disabled"), nil),
         ("Middle",     "MouseMiddle"),
         ("Side Back",  "MouseSideBack"),
         ("Side Fwd",   "MouseSideFwd"),
@@ -122,20 +122,20 @@ private struct HotkeyTab: View {
     var body: some View {
         Form {
             Section {
-                Picker("录音热键", selection: $config.hotkey) {
+                Picker("settings.hotkey.label", selection: $config.hotkey) {
                     ForEach(hotkeyOptions, id: \.1) { Text($0.0).tag($0.1) }
                 }
             } footer: {
-                Text("按住触发录音，松开后开始识别")
+                Text("settings.hotkey.footer")
                     .foregroundStyle(.secondary)
             }
 
             Section {
-                Picker("鼠标 Enter 映射", selection: $config.mouse_enter_btn) {
+                Picker("settings.mouseenter.label", selection: $config.mouse_enter_btn) {
                     ForEach(mouseEnterOptions, id: \.1) { Text($0.0).tag($0.1) }
                 }
             } footer: {
-                Text("将指定鼠标键映射为 Enter，方便快速确认")
+                Text("settings.mouseenter.footer")
                     .foregroundStyle(.secondary)
             }
         }
@@ -152,18 +152,18 @@ private struct LLMTab: View {
     var body: some View {
         Form {
             Section {
-                Toggle("识别后自动润色", isOn: $config.llm_enabled)
+                Toggle("settings.llmpolish.enable", isOn: $config.llm_enabled)
             } footer: {
-                Text("调用 LLM 去语气词、修正同音错字、整理标点")
+                Text("settings.llmpolish.footer")
                     .foregroundStyle(.secondary)
             }
 
-            Section("接口配置") {
+            Section("settings.llm.section") {
                 LabeledContent("Base URL") {
                     TextField("", text: $config.llm_base_url)
                         .multilineTextAlignment(.trailing)
                 }
-                LabeledContent("模型") {
+                LabeledContent("settings.llm.model") {
                     TextField("", text: $config.llm_model)
                         .multilineTextAlignment(.trailing)
                 }
@@ -172,13 +172,13 @@ private struct LLMTab: View {
                 }
             }
 
-            Section("润色提示词") {
+            Section("settings.llm.prompt.section") {
                 TextEditor(text: $config.llm_prompt)
                     .font(.system(.body, design: .monospaced))
                     .frame(minHeight: 200)
                 HStack {
                     Spacer()
-                    Button("恢复默认") {
+                    Button("settings.llm.prompt.reset") {
                         config.llm_prompt = defaultLLMPrompt
                     }
                     .buttonStyle(.borderless)
@@ -207,7 +207,7 @@ private struct HotwordsTab: View {
                     SecretField("", text: $config.hotwords_sk, show: $showSk)
                 }
             } footer: {
-                Text("火山引擎自学习平台凭证，用于热词同步")
+                Text("settings.hotwords.footer")
                     .foregroundStyle(.secondary)
             }
         }
@@ -255,8 +255,8 @@ struct MicrophonePicker: View {
     @State private var devices: [(id: String, name: String)] = []
 
     var body: some View {
-        Picker("麦克风", selection: $selected) {
-            Text("系统默认").tag(Optional<String>.none)
+        Picker("settings.mic.label", selection: $selected) {
+            Text("common.system_default").tag(Optional<String>.none)
             ForEach(devices, id: \.id) { device in
                 Text(device.name).tag(Optional(device.id))
             }

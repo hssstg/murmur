@@ -50,25 +50,25 @@ struct StatsView: View {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()),
                                     GridItem(.flexible()), GridItem(.flexible())],
                           spacing: 12) {
-                    StatCard(icon: "mic.fill",               value: "\(totalSessions)", label: "总记录")
-                    StatCard(icon: "character.cursor.ibeam", value: "\(totalChars)",    label: "总字数")
-                    StatCard(icon: "calendar",               value: "\(daysUsed)",      label: "使用天数")
+                    StatCard(icon: "mic.fill",               value: "\(totalSessions)", label: "stats.total_sessions")
+                    StatCard(icon: "character.cursor.ibeam", value: "\(totalChars)",    label: "stats.total_chars")
+                    StatCard(icon: "calendar",               value: "\(daysUsed)",      label: "stats.days_used")
                     StatCard(icon: "pencil.and.scribble",
-                             value: String(format: "%.0f%%", editRate * 100),           label: "修正率")
+                             value: String(format: "%.0f%%", editRate * 100),           label: "stats.edit_rate")
                 }
 
                 Divider()
 
                 // ── Daily usage (last 30 days) ──────────────────────────────
                 VStack(alignment: .leading, spacing: 8) {
-                    sectionTitle("最近 30 天用量")
+                    sectionTitle("stats.daily.title")
                     if totalSessions == 0 {
                         emptyHint()
                     } else {
                         Chart(dailyData, id: \.date) { item in
                             AreaMark(
-                                x: .value("日期", item.date, unit: .day),
-                                y: .value("次数", item.count)
+                                x: .value("stats.chart.date_axis", item.date, unit: .day),
+                                y: .value("stats.chart.count_axis", item.count)
                             )
                             .foregroundStyle(
                                 LinearGradient(
@@ -80,8 +80,8 @@ struct StatsView: View {
                             .interpolationMethod(.catmullRom)
 
                             LineMark(
-                                x: .value("日期", item.date, unit: .day),
-                                y: .value("次数", item.count)
+                                x: .value("stats.chart.date_axis", item.date, unit: .day),
+                                y: .value("stats.chart.count_axis", item.count)
                             )
                             .foregroundStyle(Color.accentColor)
                             .lineStyle(StrokeStyle(lineWidth: 2))
@@ -109,14 +109,14 @@ struct StatsView: View {
 
                 // ── Hourly distribution ─────────────────────────────────────
                 VStack(alignment: .leading, spacing: 8) {
-                    sectionTitle("时段分布（24 小时）")
+                    sectionTitle("stats.hourly.title")
                     if totalSessions == 0 {
                         emptyHint()
                     } else {
                         Chart(hourlyData, id: \.hour) { item in
                             AreaMark(
-                                x: .value("小时", item.hour),
-                                y: .value("次数", item.count)
+                                x: .value("stats.chart.hour_axis", item.hour),
+                                y: .value("stats.chart.count_axis", item.count)
                             )
                             .foregroundStyle(
                                 LinearGradient(
@@ -128,8 +128,8 @@ struct StatsView: View {
                             .interpolationMethod(.catmullRom)
 
                             LineMark(
-                                x: .value("小时", item.hour),
-                                y: .value("次数", item.count)
+                                x: .value("stats.chart.hour_axis", item.hour),
+                                y: .value("stats.chart.count_axis", item.count)
                             )
                             .foregroundStyle(Color.accentColor)
                             .lineStyle(StrokeStyle(lineWidth: 2))
@@ -139,7 +139,8 @@ struct StatsView: View {
                             AxisMarks(values: [0, 6, 12, 18, 23]) { v in
                                 AxisValueLabel {
                                     if let h = v.as(Int.self) {
-                                        Text("\(h)时").font(.caption2)
+                                        Text(String(format: String(localized: "stats.chart.hour_label"), h))
+                                            .font(.caption2)
                                     }
                                 }
                                 AxisGridLine().foregroundStyle(.secondary.opacity(0.2))
@@ -160,15 +161,15 @@ struct StatsView: View {
 
                 // ── Recognition quality ─────────────────────────────────────
                 VStack(alignment: .leading, spacing: 10) {
-                    sectionTitle("识别质量")
+                    sectionTitle("stats.quality.title")
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()),
                                         GridItem(.flexible())], spacing: 12) {
                         StatCard(icon: "checkmark.circle",
-                                 value: "\(totalSessions - editedCount)", label: "直接采用")
+                                 value: "\(totalSessions - editedCount)", label: "stats.quality.direct")
                         StatCard(icon: "pencil.circle",
-                                 value: "\(editedCount)", label: "已人工修正")
+                                 value: "\(editedCount)",                 label: "stats.quality.edited")
                         StatCard(icon: "textformat.size",
-                                 value: String(format: "%.1f", avgChars), label: "平均字数/条")
+                                 value: String(format: "%.1f", avgChars), label: "stats.quality.avg_chars")
                     }
                 }
             }
@@ -178,7 +179,7 @@ struct StatsView: View {
     }
 
     @ViewBuilder
-    private func sectionTitle(_ s: String) -> some View {
+    private func sectionTitle(_ s: LocalizedStringKey) -> some View {
         Text(s)
             .font(.headline)
             .foregroundStyle(.primary)
@@ -186,7 +187,7 @@ struct StatsView: View {
 
     @ViewBuilder
     private func emptyHint() -> some View {
-        Text("暂无数据")
+        Text("common.no_data")
             .font(.caption)
             .foregroundStyle(.tertiary)
             .frame(maxWidth: .infinity, alignment: .center)
@@ -199,7 +200,7 @@ struct StatsView: View {
 private struct StatCard: View {
     let icon: String
     let value: String
-    let label: String
+    let label: LocalizedStringKey
 
     var body: some View {
         VStack(spacing: 6) {
