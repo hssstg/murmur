@@ -74,8 +74,12 @@ public class KeyboardMonitor {
     // MARK: - Private event handling
 
     private func handle(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
-        let loc = NSEvent.mouseLocation
-        onCursorPosition?(loc)
+        // macOS disables the tap on timeout — re-enable immediately so hotkeys keep working.
+        // kCGEventTapDisabledByTimeout = 0xFFFFFFFE, kCGEventTapDisabledByUserInput = 0xFFFFFFFF
+        if type.rawValue >= 0xFFFFFFFE {
+            if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: true) }
+            return nil
+        }
 
         switch type {
         case .flagsChanged:
@@ -170,7 +174,9 @@ public class KeyboardMonitor {
         guard !pttActive else { return }
         pttActive = true
         let cb = onPTTStart
-        DispatchQueue.main.async { cb?() }
+        let posCb = onCursorPosition
+        let loc = NSEvent.mouseLocation
+        DispatchQueue.main.async { posCb?(loc); cb?() }
     }
 
     private func triggerStop() {
