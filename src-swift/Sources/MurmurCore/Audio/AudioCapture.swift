@@ -1,5 +1,6 @@
 import AVFoundation
 import CoreAudio
+import AudioToolbox
 
 public class AudioCapture {
     private var engine: AVAudioEngine?
@@ -22,13 +23,25 @@ public class AudioCapture {
     public func start(deviceUID: String? = nil) throws {
         guard !isRunning else { return }
 
-        if let targetUID = deviceUID, !targetUID.isEmpty {
-            setDefaultInputDevice(uid: targetUID)
-        }
-
         // Create a fresh engine on every start — AVAudioEngine cannot reliably restart after stop()
         let eng = AVAudioEngine()
         engine = eng
+
+        // Set specific input device directly on the engine's AudioUnit,
+        // without touching the system-wide default input device.
+        if let targetUID = deviceUID, !targetUID.isEmpty,
+           let deviceID = findDeviceID(uid: targetUID),
+           let audioUnit = eng.inputNode.audioUnit {
+            var devID = deviceID
+            AudioUnitSetProperty(
+                audioUnit,
+                kAudioOutputUnitProperty_CurrentDevice,
+                kAudioUnitScope_Global,
+                0,
+                &devID,
+                UInt32(MemoryLayout<AudioDeviceID>.size)
+            )
+        }
 
         let inputNode = eng.inputNode
         let hwFormat = inputNode.inputFormat(forBus: 0)
@@ -42,7 +55,7 @@ public class AudioCapture {
         try eng.start()
         isRunning = true
 
-        let name = Self.currentInputDeviceName()
+        let name = deviceName(of: eng.inputNode)
         let cb = onDeviceName
         DispatchQueue.main.async { cb?(name) }
     }
@@ -85,7 +98,8 @@ public class AudioCapture {
         onChunk?(data)
     }
 
-    private func setDefaultInputDevice(uid targetUID: String) {
+    /// Find CoreAudio device ID by UID without side effects.
+    private func findDeviceID(uid targetUID: String) -> AudioDeviceID? {
         var address = AudioObjectPropertyAddress(
             mSelector: kAudioHardwarePropertyDevices,
             mScope: kAudioObjectPropertyScopeGlobal,
@@ -97,7 +111,6 @@ public class AudioCapture {
         var devices = [AudioDeviceID](repeating: 0, count: count)
         AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &propSize, &devices)
 
-        var deviceID: AudioDeviceID = kAudioObjectUnknown
         for id in devices {
             var uidRef: CFString? = nil
             var uidSize = UInt32(MemoryLayout<CFString?>.size)
@@ -108,31 +121,26 @@ public class AudioCapture {
             )
             AudioObjectGetPropertyData(id, &uidAddr, 0, nil, &uidSize, &uidRef)
             if let uid = uidRef as String?, uid == targetUID {
-                deviceID = id
-                break
+                return id
             }
         }
-
-        guard deviceID != kAudioObjectUnknown else { return }
-
-        var setAddr = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDefaultInputDevice,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
-        var devID = deviceID
-        AudioObjectSetPropertyData(AudioObjectID(kAudioObjectSystemObject), &setAddr, 0, nil, UInt32(MemoryLayout<AudioDeviceID>.size), &devID)
+        return nil
     }
 
-    private static func currentInputDeviceName() -> String {
+    /// Get the display name of the device actually used by the given input node.
+    private func deviceName(of inputNode: AVAudioInputNode) -> String {
+        guard let audioUnit = inputNode.audioUnit else { return "Unknown" }
         var deviceID = AudioDeviceID(0)
         var size = UInt32(MemoryLayout<AudioDeviceID>.size)
-        var addr = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDefaultInputDevice,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
+        AudioUnitGetProperty(
+            audioUnit,
+            kAudioOutputUnitProperty_CurrentDevice,
+            kAudioUnitScope_Global,
+            0,
+            &deviceID,
+            &size
         )
-        AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &addr, 0, nil, &size, &deviceID)
+        guard deviceID != 0 else { return "Unknown" }
 
         var nameAddr = AudioObjectPropertyAddress(
             mSelector: kAudioObjectPropertyName,
