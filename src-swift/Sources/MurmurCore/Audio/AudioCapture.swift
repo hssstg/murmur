@@ -2,7 +2,7 @@
 import CoreAudio
 import AudioToolbox
 
-public class AudioCapture {
+public class AudioCapture: @unchecked Sendable {
     private var engine: AVAudioEngine?
     private var converter: AVAudioConverter?
     private let targetFormat: AVAudioFormat
@@ -20,7 +20,6 @@ public class AudioCapture {
         )!
     }
 
-    @MainActor
     public func start(deviceUID: String? = nil) async throws {
         guard !isRunning else { return }
 
