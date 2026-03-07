@@ -32,6 +32,7 @@ public class PushToTalk {
     public func handleStart() {
         guard !isSessionActive else { return }
         sessionGeneration += 1
+        let myGeneration = sessionGeneration
         isSessionActive = true
         idleTimer?.cancel()
         idleTimer = nil
@@ -63,10 +64,11 @@ public class PushToTalk {
             }
             client.onError = { [weak self] _ in
                 Task { @MainActor [weak self] in
-                    self?.setStatus(.error)
-                    self?.client = nil
-                    self?.isSessionActive = false
-                    self?.scheduleIdleReset(after: 1.5)
+                    guard let self, self.sessionGeneration == myGeneration else { return }
+                    self.setStatus(.error)
+                    self.client = nil
+                    self.isSessionActive = false
+                    self.scheduleIdleReset(after: 1.5)
                 }
             }
 
@@ -81,6 +83,7 @@ public class PushToTalk {
                 self.pendingChunks = []
                 for chunk in buffered { client.sendAudio(chunk) }
             } catch {
+                guard self.sessionGeneration == myGeneration else { return }
                 self.setStatus(.error)
                 self.client = nil
                 self.isSessionActive = false
