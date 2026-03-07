@@ -20,7 +20,7 @@ public class AudioCapture: @unchecked Sendable {
         )!
     }
 
-    public func start(deviceUID: String? = nil) async throws {
+    public func start(deviceUID: String? = nil) throws {
         guard !isRunning else { return }
 
         // Create a fresh engine on every start — AVAudioEngine cannot reliably restart after stop()
@@ -44,16 +44,7 @@ public class AudioCapture: @unchecked Sendable {
         }
 
         let inputNode = eng.inputNode
-
-        // inputFormat(forBus:) internally does dispatch_barrier_sync to the AVAudioIOUnit
-        // serial queue, which in turn does mach IPC to coreaudiod. If coreaudiod is busy
-        // (e.g., still tearing down the previous engine), this blocks for seconds and freezes
-        // the main actor. Run it on a background thread so the main thread stays responsive.
-        let hwFormat: AVAudioFormat = await withCheckedContinuation { cont in
-            DispatchQueue.global(qos: .userInitiated).async {
-                cont.resume(returning: inputNode.inputFormat(forBus: 0))
-            }
-        }
+        let hwFormat = inputNode.inputFormat(forBus: 0)
 
         converter = AVAudioConverter(from: hwFormat, to: targetFormat)
 
@@ -61,18 +52,7 @@ public class AudioCapture: @unchecked Sendable {
             self?.processTap(buffer: buffer)
         }
 
-        // eng.start() also involves CoreAudio IPC — run off main thread for the same reason.
-        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
-            DispatchQueue.global(qos: .userInitiated).async {
-                do {
-                    try eng.start()
-                    cont.resume()
-                } catch {
-                    cont.resume(throwing: error)
-                }
-            }
-        }
-
+        try eng.start()
         isRunning = true
 
         let name = deviceName(of: eng.inputNode)

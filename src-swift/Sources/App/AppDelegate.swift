@@ -101,12 +101,21 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         keyboard.onPTTStart = { [weak self] in
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                do {
-                    try await self.audio.start(deviceUID: self.configStore.config.microphone)
-                } catch {
-                    fputs("[murmur] audio.start failed: \(error)\n", stderr)
+                let audio = self.audio!
+                let deviceUID = self.configStore.config.microphone
+                let ptt = self.ptt!
+                // Run audio.start() in a detached (nonisolated) task so:
+                // 1. The blocking CoreAudio IPC doesn't freeze the main actor.
+                // 2. The installTap closure has no actor isolation and won't crash
+                //    when AVAudio calls it from its realtime thread.
+                Task.detached(priority: .userInitiated) {
+                    do {
+                        try audio.start(deviceUID: deviceUID)
+                    } catch {
+                        fputs("[murmur] audio.start failed: \(error)\n", stderr)
+                    }
+                    await ptt.handleStart()
                 }
-                self.ptt.handleStart()
             }
         }
         keyboard.onPTTStop = { [weak self] in
