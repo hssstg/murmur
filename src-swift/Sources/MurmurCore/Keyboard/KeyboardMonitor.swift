@@ -112,7 +112,7 @@ public class KeyboardMonitor {
         default:
             break
         }
-        return Unmanaged.passRetained(event)
+        return Unmanaged.passUnretained(event)
     }
 
     private func handleFlagsChanged(event: CGEvent) -> Unmanaged<CGEvent>? {
@@ -129,7 +129,7 @@ public class KeyboardMonitor {
         default:
             // Hotkey is a mouse button or F-key — ignore flagsChanged entirely
             lastFlags = flags
-            return Unmanaged.passRetained(event)
+            return Unmanaged.passUnretained(event)
         }
 
         if keyCode == expectedKeyCode {
@@ -140,7 +140,7 @@ public class KeyboardMonitor {
         }
 
         lastFlags = flags
-        return Unmanaged.passRetained(event)
+        return Unmanaged.passUnretained(event)
     }
 
     private func isHotkeyMouseButton(_ btn: Int) -> Bool {
