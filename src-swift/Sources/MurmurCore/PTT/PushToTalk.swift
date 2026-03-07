@@ -16,6 +16,7 @@ public class PushToTalk {
     private var latestResult: ASRResult?
     private var idleTimer: Task<Void, Never>?
     private var peakRms: Float = 0
+    private var sessionGeneration: Int = 0
 
     public init(config: AppConfig) {
         self.config = config
@@ -29,6 +30,7 @@ public class PushToTalk {
 
     public func handleStart() {
         guard !isSessionActive else { return }
+        sessionGeneration += 1
         isSessionActive = true
         idleTimer?.cancel()
         idleTimer = nil
@@ -83,6 +85,7 @@ public class PushToTalk {
 
     public func handleStop() {
         guard isSessionActive else { return }
+        let myGeneration = sessionGeneration
         setStatus(.processing)
 
         let capturedClient = client
@@ -106,13 +109,15 @@ public class PushToTalk {
 
             if !textToInsert.isEmpty {
                 if cfg.llm_enabled && !cfg.llm_base_url.isEmpty {
+                    guard self.sessionGeneration == myGeneration else { return }
                     self.setStatus(.polishing)
                     textToInsert = await LLMClient.polish(text: textToInsert, config: cfg)
                 }
+                guard self.sessionGeneration == myGeneration else { return }
                 await TextInserter.insert(textToInsert)
             }
 
-            guard !self.isSessionActive else { return }
+            guard self.sessionGeneration == myGeneration else { return }
             if textToInsert.isEmpty {
                 self.currentText = ""
                 self.setStatus(.idle)
