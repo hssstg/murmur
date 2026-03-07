@@ -103,8 +103,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         keyboard.onPTTStart = { [weak self] in
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                self.pttStopRequestedDuringStart = false
                 guard self.activeStartTask == nil else { return }
+                self.pttStopRequestedDuringStart = false
                 let audio = self.audio!
                 let deviceUID = self.configStore.config.microphone
                 let ptt = self.ptt!
@@ -136,7 +136,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 if self.activeStartTask != nil {
                     // Start is still in flight — flag it to abort when it lands
                     self.pttStopRequestedDuringStart = true
-                    self.activeStartTask = nil
+                    // Do NOT nil activeStartTask — let the task clear it when done,
+                    // so a subsequent press stays blocked until the task fully exits.
                     return
                 }
                 self.audio.stop()
