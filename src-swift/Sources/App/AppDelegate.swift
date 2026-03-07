@@ -38,6 +38,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private let configStore   = ConfigStore()
     private let historyStore  = HistoryStore()
     private let hotwordStore  = HotwordStore()
+    private var activeStartTask: Task<Void, Never>?
+    private var pttStopRequestedDuringStart = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)  // no Dock icon
@@ -101,26 +103,40 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         keyboard.onPTTStart = { [weak self] in
             Task { @MainActor [weak self] in
                 guard let self else { return }
+                self.pttStopRequestedDuringStart = false
                 let audio = self.audio!
                 let deviceUID = self.configStore.config.microphone
                 let ptt = self.ptt!
-                // Run audio.start() in a detached (nonisolated) task so:
-                // 1. The blocking CoreAudio IPC doesn't freeze the main actor.
-                // 2. The installTap closure has no actor isolation and won't crash
-                //    when AVAudio calls it from its realtime thread.
-                Task.detached(priority: .userInitiated) {
+                let task = Task.detached(priority: .userInitiated) {
                     do {
                         try audio.start(deviceUID: deviceUID)
                     } catch {
                         fputs("[murmur] audio.start failed: \(error)\n", stderr)
                     }
+                    // Hop back to main actor to check if PTT was released during startup
+                    let shouldStop = await MainActor.run { [weak self] () -> Bool in
+                        guard let self = self else { return true }
+                        self.activeStartTask = nil
+                        return self.pttStopRequestedDuringStart
+                    }
+                    if shouldStop {
+                        // Stop already fired — undo the start and bail
+                        audio.stop()
+                        return
+                    }
                     await ptt.handleStart()
                 }
+                self.activeStartTask = task
             }
         }
         keyboard.onPTTStop = { [weak self] in
             Task { @MainActor [weak self] in
                 guard let self else { return }
+                if self.activeStartTask != nil {
+                    // Start is still in flight — flag it to abort when it lands
+                    self.pttStopRequestedDuringStart = true
+                    self.activeStartTask = nil
+                }
                 self.audio.stop()
                 self.ptt.handleStop()
             }
