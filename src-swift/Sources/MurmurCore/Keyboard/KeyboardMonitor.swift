@@ -175,8 +175,13 @@ public class KeyboardMonitor {
         pttActive = true
         let cb = onPTTStart
         let posCb = onCursorPosition
-        let loc = NSEvent.mouseLocation
-        DispatchQueue.main.async { posCb?(loc); cb?() }
+        // NSEvent.mouseLocation must be called on the main thread.
+        // Calling it here (on the tap thread) can block if AppKit is busy,
+        // which stalls the entire tap callback and freezes event delivery.
+        DispatchQueue.main.async {
+            posCb?(NSEvent.mouseLocation)
+            cb?()
+        }
     }
 
     private func triggerStop() {
