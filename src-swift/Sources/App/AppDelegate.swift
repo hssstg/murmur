@@ -13,7 +13,7 @@ private class EscapableWindow: NSWindow {
 @MainActor
 private struct SettingsRoot: View {
     @State var config: AppConfig
-    let onSave: () -> Bool
+    let onSave: () -> Void
     let onConfigChange: (AppConfig) -> Void
 
     var body: some View {
@@ -270,7 +270,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let root = SettingsRoot(
             config: configStore.config,
             onSave: { [weak self] in
-                guard let self = self else { return false }
+                guard let self = self else { return }
                 do {
                     try self.configStore.save()
                 } catch {
@@ -282,7 +282,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                         alert.alertStyle = .warning
                         alert.runModal()
                     }
-                    return false
+                    return
                 }
                 Task { @MainActor [weak self] in
                     guard let self = self else { return }
@@ -290,7 +290,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     self.keyboard.stop()
                     self.setupKeyboard()
                 }
-                return true
             },
             onConfigChange: { [weak self] newConfig in
                 self?.configStore.config = newConfig

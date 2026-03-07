@@ -4,7 +4,7 @@ import AVFoundation
 
 struct SettingsView: View {
     @Binding var config: AppConfig
-    var onSave: () -> Bool
+    var onSave: () -> Void
 
     @State private var saveLabel: String = L("common.save")
 
@@ -36,7 +36,7 @@ struct SettingsView: View {
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button(saveLabel) {
-                    guard onSave() else { return }
+                    onSave()
                     saveLabel = L("common.saved")
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                         saveLabel = L("common.save")
