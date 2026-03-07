@@ -13,7 +13,7 @@ private class EscapableWindow: NSWindow {
 @MainActor
 private struct SettingsRoot: View {
     @State var config: AppConfig
-    let onSave: () -> Void
+    let onSave: () -> Bool
     let onConfigChange: (AppConfig) -> Void
 
     var body: some View {
@@ -270,16 +270,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let root = SettingsRoot(
             config: configStore.config,
             onSave: { [weak self] in
-                guard let self = self else { return }
+                guard let self = self else { return false }
                 do {
                     try self.configStore.save()
                 } catch {
-                    let alert = NSAlert()
-                    alert.messageText = "无法保存设置"
-                    alert.informativeText = error.localizedDescription
-                    alert.alertStyle = .warning
-                    alert.runModal()
-                    return
+                    // Defer alert so it runs after the SwiftUI action returns (avoids runModal re-entrancy)
+                    DispatchQueue.main.async {
+                        let alert = NSAlert()
+                        alert.messageText = "无法保存设置"
+                        alert.informativeText = error.localizedDescription
+                        alert.alertStyle = .warning
+                        alert.runModal()
+                    }
+                    return false
                 }
                 Task { @MainActor [weak self] in
                     guard let self = self else { return }
@@ -287,6 +290,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     self.keyboard.stop()
                     self.setupKeyboard()
                 }
+                return true
             },
             onConfigChange: { [weak self] newConfig in
                 self?.configStore.config = newConfig
