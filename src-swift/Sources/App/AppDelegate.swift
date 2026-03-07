@@ -102,7 +102,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 do {
-                    try self.audio.start(deviceUID: self.configStore.config.microphone)
+                    try await self.audio.start(deviceUID: self.configStore.config.microphone)
                 } catch {
                     fputs("[murmur] audio.start failed: \(error)\n", stderr)
                 }
