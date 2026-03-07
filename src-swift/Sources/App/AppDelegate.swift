@@ -104,6 +104,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 self.pttStopRequestedDuringStart = false
+                guard self.activeStartTask == nil else { return }
                 let audio = self.audio!
                 let deviceUID = self.configStore.config.microphone
                 let ptt = self.ptt!
@@ -136,6 +137,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     // Start is still in flight — flag it to abort when it lands
                     self.pttStopRequestedDuringStart = true
                     self.activeStartTask = nil
+                    return
                 }
                 self.audio.stop()
                 self.ptt.handleStop()
