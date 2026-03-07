@@ -113,6 +113,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                         try audio.start(deviceUID: deviceUID)
                     } catch {
                         fputs("[murmur] audio.start failed: \(error)\n", stderr)
+                        await MainActor.run { [weak self] in self?.activeStartTask = nil }
+                        return  // no audio — don't open a PTT session
                     }
                     // Hop back to main actor to check if PTT was released during startup
                     let shouldStop = await MainActor.run { [weak self] () -> Bool in
