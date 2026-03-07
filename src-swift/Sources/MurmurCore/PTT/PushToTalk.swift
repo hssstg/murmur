@@ -101,6 +101,10 @@ public class PushToTalk {
 
             c.finishAudio()
 
+            guard self.sessionGeneration == myGeneration else {
+                c.disconnect()
+                return
+            }
             let finalResult = await self.waitForFinalResult(client: c, timeout: 3.0)
             c.disconnect()
 
