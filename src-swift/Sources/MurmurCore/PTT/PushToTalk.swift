@@ -17,6 +17,7 @@ public class PushToTalk {
     private var idleTimer: Task<Void, Never>?
     private var peakRms: Float = 0
     private var sessionGeneration: Int = 0
+    private var pendingChunks: [Data] = []
 
     public init(config: AppConfig) {
         self.config = config
@@ -72,6 +73,11 @@ public class PushToTalk {
             // Assign to self before connecting so audio callbacks can reach it
             self.client = client
 
+            // Flush any audio chunks that arrived before the client was ready
+            let buffered = self.pendingChunks
+            self.pendingChunks = []
+            for chunk in buffered { client.sendAudio(chunk) }
+
             do {
                 try await client.connect()
             } catch {
@@ -91,6 +97,7 @@ public class PushToTalk {
         let capturedClient = client
         client = nil
         isSessionActive = false
+        pendingChunks = []
 
         Task { @MainActor [weak self] in
             guard let self = self else { return }
@@ -133,7 +140,11 @@ public class PushToTalk {
     }
 
     public func handleAudioChunk(_ data: Data) {
-        client?.sendAudio(data)
+        if let client = client {
+            client.sendAudio(data)
+        } else if isSessionActive {
+            pendingChunks.append(data)
+        }
 
         let count = data.count / 2
         guard count > 0 else { return }
