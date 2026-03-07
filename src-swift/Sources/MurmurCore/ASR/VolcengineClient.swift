@@ -89,11 +89,18 @@ public class VolcengineClient: NSObject, @unchecked Sendable {
         }
         for chunk in chunks { sendAudioChunk(chunk) }
 
-        let hasPendingFinish = lock.withLock { () -> Bool in
+        let (connected, hasPendingFinish) = lock.withLock { () -> (Bool, Bool) in
+            guard connectionState == "connecting" else {
+                return (false, false)  // receive loop already failed
+            }
             connectionState = "connected"
             let p = pendingFinish
             if p { pendingFinish = false }
-            return p
+            return (true, p)
+        }
+
+        guard connected else {
+            throw URLError(.networkConnectionLost)
         }
 
         if hasPendingFinish {
