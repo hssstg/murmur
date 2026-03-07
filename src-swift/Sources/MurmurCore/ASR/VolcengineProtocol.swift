@@ -44,9 +44,11 @@ public enum VolcengineProtocol {
     }
 
     public static func dataToInt32(_ data: Data, offset: Int = 0) -> Int32 {
-        return data.withUnsafeBytes { ptr in
-            ptr.load(fromByteOffset: offset, as: Int32.self).bigEndian
+        var v: Int32 = 0
+        withUnsafeMutableBytes(of: &v) { dest in
+            _ = data.copyBytes(to: dest, from: offset..<(offset + 4))
         }
+        return Int32(bigEndian: v)
     }
 
     // MARK: - Packet building
