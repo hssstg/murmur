@@ -271,7 +271,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             config: configStore.config,
             onSave: { [weak self] in
                 guard let self = self else { return }
-                try? self.configStore.save()
+                do {
+                    try self.configStore.save()
+                } catch {
+                    let alert = NSAlert()
+                    alert.messageText = "无法保存设置"
+                    alert.informativeText = error.localizedDescription
+                    alert.alertStyle = .warning
+                    alert.runModal()
+                    return
+                }
                 Task { @MainActor [weak self] in
                     guard let self = self else { return }
                     self.ptt.updateConfig(self.configStore.config)
