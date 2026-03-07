@@ -185,12 +185,13 @@ public class VolcengineClient: NSObject, @unchecked Sendable {
             case .success(let msg):
                 if case .data(let data) = msg { self.handleMessage(data) }
                 self.startReceiveLoop(task)
-            case .failure:
+            case .failure(let error):
                 let state = self.lock.withLock { self.connectionState }
                 if state != "disconnected" {
                     self.lock.withLock { self.connectionState = "disconnected" }
-                    let cb = self.lock.withLock { self.onStatus }
-                    cb?(.idle)
+                    let (onErrorCb, onStatusCb) = self.lock.withLock { (self.onError, self.onStatus) }
+                    onErrorCb?(error)
+                    onStatusCb?(.error)
                 }
             }
         }
