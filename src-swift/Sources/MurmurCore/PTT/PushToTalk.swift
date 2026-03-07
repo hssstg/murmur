@@ -73,17 +73,18 @@ public class PushToTalk {
             // Assign to self before connecting so audio callbacks can reach it
             self.client = client
 
-            // Flush any audio chunks that arrived before the client was ready
-            let buffered = self.pendingChunks
-            self.pendingChunks = []
-            for chunk in buffered { client.sendAudio(chunk) }
-
             do {
                 try await client.connect()
+                // Flush chunks that arrived before the client was assigned.
+                // Must happen after connect() so connectionState == "connected" and sendAudio() works.
+                let buffered = self.pendingChunks
+                self.pendingChunks = []
+                for chunk in buffered { client.sendAudio(chunk) }
             } catch {
                 self.setStatus(.error)
                 self.client = nil
                 self.isSessionActive = false
+                self.pendingChunks = []
                 self.scheduleIdleReset(after: 1.5)
             }
         }
