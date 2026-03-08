@@ -18,21 +18,44 @@ class MicKeyboardView(context: Context, private val listener: Listener) : View(c
 
     enum class State { IDLE, RECORDING, PROCESSING }
 
+    private companion object {
+        val COLOR_BG           = Color.parseColor("#141416")
+        val COLOR_CIRCLE_IDLE  = Color.parseColor("#3A3A3C")
+        val COLOR_CIRCLE_REC   = Color.parseColor("#FF3B30")
+        val COLOR_CIRCLE_PROC  = Color.parseColor("#2C2C2E")
+        val COLOR_ICON_IDLE    = Color.parseColor("#EBEBF5")
+        val COLOR_ICON_PROC    = Color.parseColor("#636366")
+        val COLOR_LABEL        = Color.parseColor("#888888")
+    }
+
     var state: State = State.IDLE
         set(value) { field = value; invalidate() }
 
+    private val dp = resources.displayMetrics.density
+
     private val bgPaint = Paint().apply {
-        color = Color.parseColor("#141416")
+        color = COLOR_BG
         style = Paint.Style.FILL
     }
     private val circlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
     }
+    private val iconPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+    }
+    private val standPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 1.8f * resources.displayMetrics.density
+        strokeCap = Paint.Cap.ROUND
+    }
     private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#888888")
+        color = COLOR_LABEL
         textAlign = Paint.Align.CENTER
         textSize = 13 * resources.displayMetrics.scaledDensity
     }
+
+    private val bodyRect = RectF()
+    private val arcRect  = RectF()
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
@@ -47,54 +70,40 @@ class MicKeyboardView(context: Context, private val listener: Listener) : View(c
     override fun onDraw(canvas: Canvas) {
         val w = width.toFloat()
         val h = height.toFloat()
-        val dp = resources.displayMetrics.density
 
-        // Background
         canvas.drawRect(0f, 0f, w, h, bgPaint)
 
         val cx = w / 2f
         val cy = h / 2f
         val radius = 36 * dp
 
-        // Button circle
         circlePaint.color = when (state) {
-            State.IDLE       -> Color.parseColor("#3A3A3C")
-            State.RECORDING  -> Color.parseColor("#FF3B30")
-            State.PROCESSING -> Color.parseColor("#2C2C2E")
+            State.IDLE       -> COLOR_CIRCLE_IDLE
+            State.RECORDING  -> COLOR_CIRCLE_REC
+            State.PROCESSING -> COLOR_CIRCLE_PROC
         }
         canvas.drawCircle(cx, cy, radius, circlePaint)
 
-        // Mic icon
         val iconColor = when (state) {
-            State.IDLE       -> Color.parseColor("#EBEBF5")
+            State.IDLE       -> COLOR_ICON_IDLE
             State.RECORDING  -> Color.WHITE
-            State.PROCESSING -> Color.parseColor("#636366")
+            State.PROCESSING -> COLOR_ICON_PROC
         }
-        val iconPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = iconColor
-            style = Paint.Style.FILL
-        }
+        iconPaint.color  = iconColor
+        standPaint.color = iconColor
+
         val mw = 9 * dp
         val mh = 14 * dp
         val mt = cy - mh * 0.65f
-        // Capsule body
-        val bodyRect = RectF(cx - mw / 2, mt, cx + mw / 2, mt + mh)
+        bodyRect.set(cx - mw / 2, mt, cx + mw / 2, mt + mh)
         canvas.drawRoundRect(bodyRect, mw / 2, mw / 2, iconPaint)
-        // Stand arc
-        val standPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = iconColor
-            style = Paint.Style.STROKE
-            strokeWidth = 1.8f * dp
-            strokeCap = Paint.Cap.ROUND
-        }
-        val standR = mw * 0.9f
+
+        val standR   = mw * 0.9f
         val standTop = mt + mh - mw / 2
-        val arcRect = RectF(cx - standR, standTop - standR, cx + standR, standTop + standR)
+        arcRect.set(cx - standR, standTop - standR, cx + standR, standTop + standR)
         canvas.drawArc(arcRect, 0f, 180f, false, standPaint)
-        // Stand pole
         canvas.drawLine(cx, standTop + standR, cx, standTop + standR + 4 * dp, standPaint)
 
-        // Hint label (idle only)
         if (state == State.IDLE) {
             canvas.drawText("按住说话", cx, cy + radius + 18 * dp, labelPaint)
         }
