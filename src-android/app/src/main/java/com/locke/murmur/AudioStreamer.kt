@@ -30,6 +30,10 @@ class AudioStreamer(private val onChunk: (ByteArray) -> Unit) {
             AudioFormat.ENCODING_PCM_16BIT,
             bufferSize
         )
+        if (ar.state != AudioRecord.STATE_INITIALIZED) {
+            ar.release()
+            return
+        }
         audioRecord = ar
         ar.startRecording()
 

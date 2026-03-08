@@ -5,6 +5,7 @@ import okhttp3.*
 import okio.ByteString.Companion.toByteString
 import org.json.JSONObject
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 
 sealed class AsrEvent {
     data class Result(val text: String, val isFinal: Boolean) : AsrEvent()
@@ -17,16 +18,16 @@ class VolcengineClient {
         private const val APP_ID       = "7232385834"
         private const val ACCESS_TOKEN = "5lSRCDzbb2KgBjEtKJbT9NIsU-z2z-F_"
         private const val RESOURCE_ID  = "volc.bigasr.sauc.duration"
+        private val http = OkHttpClient()
     }
 
     val events = Channel<AsrEvent>(Channel.UNLIMITED)
 
-    private val http = OkHttpClient()
     @Volatile private var webSocket: WebSocket? = null
-    @Volatile private var sequence = 1
+    private val sequence = AtomicInteger(1)
 
     fun connect() {
-        sequence = 1
+        sequence.set(1)
         val requestId = UUID.randomUUID().toString()
         val request = Request.Builder()
             .url(VolcengineProtocol.ENDPOINT)
@@ -57,8 +58,8 @@ class VolcengineClient {
                         put("result_type", "full")
                     })
                 }
-                val packet = VolcengineProtocol.buildInitPacket(payload, sequence)
-                sequence = 2
+                val packet = VolcengineProtocol.buildInitPacket(payload, sequence.get())
+                sequence.set(2)
                 ws.send(packet.toByteString())
             }
 
@@ -80,12 +81,12 @@ class VolcengineClient {
     }
 
     fun sendAudio(pcm: ByteArray) {
-        val packet = VolcengineProtocol.buildAudioPacket(pcm, sequence++, isLast = false)
+        val packet = VolcengineProtocol.buildAudioPacket(pcm, sequence.getAndIncrement(), isLast = false)
         webSocket?.send(packet.toByteString())
     }
 
     fun finish() {
-        val packet = VolcengineProtocol.buildAudioPacket(ByteArray(0), sequence, isLast = true)
+        val packet = VolcengineProtocol.buildAudioPacket(ByteArray(0), sequence.get(), isLast = true)
         webSocket?.send(packet.toByteString())
     }
 

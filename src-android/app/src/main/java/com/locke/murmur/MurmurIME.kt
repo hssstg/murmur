@@ -38,6 +38,12 @@ class MurmurIME : InputMethodService(), MicKeyboardView.Listener {
     // MARK: - Session lifecycle
 
     private fun startSession() {
+        // Cancel any leftover session before starting a new one
+        eventJob?.cancel()
+        eventJob = null
+        volcengineClient?.disconnect()
+        volcengineClient = null
+
         keyboardView.state = MicKeyboardView.State.RECORDING
 
         val vc = VolcengineClient()
