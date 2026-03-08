@@ -6,6 +6,7 @@ import android.media.MediaRecorder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class AudioStreamer(private val onChunk: (ByteArray) -> Unit) {
@@ -21,6 +22,7 @@ class AudioStreamer(private val onChunk: (ByteArray) -> Unit) {
     private var recordingJob: Job? = null
 
     fun start(scope: CoroutineScope) {
+        stop() // clean up any existing session before starting a new one
         val ar = AudioRecord(
             MediaRecorder.AudioSource.MIC,
             sampleRate,
@@ -33,7 +35,7 @@ class AudioStreamer(private val onChunk: (ByteArray) -> Unit) {
 
         recordingJob = scope.launch(Dispatchers.IO) {
             val buffer = ByteArray(bufferSize)
-            while (ar.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+            while (isActive && ar.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
                 val read = ar.read(buffer, 0, buffer.size)
                 if (read > 0) onChunk(buffer.copyOf(read))
             }
