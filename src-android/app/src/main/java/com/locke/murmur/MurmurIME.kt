@@ -49,18 +49,22 @@ class MurmurIME : InputMethodService(), MicKeyboardView.Listener {
         streamer.start(scope)
 
         eventJob = scope.launch {
-            for (event in vc.events) {
-                when (event) {
-                    is AsrEvent.Result -> {
-                        if (event.isFinal) {
-                            if (event.text.isNotEmpty()) {
-                                currentInputConnection?.commitText(event.text, 1)
+            try {
+                for (event in vc.events) {
+                    when (event) {
+                        is AsrEvent.Result -> {
+                            if (event.isFinal) {
+                                if (event.text.isNotEmpty()) {
+                                    currentInputConnection?.commitText(event.text, 1)
+                                }
+                                break
                             }
-                            finishSession()
                         }
+                        AsrEvent.Error -> break
                     }
-                    AsrEvent.Error -> finishSession()
                 }
+            } finally {
+                finishSession()
             }
         }
     }
