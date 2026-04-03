@@ -24,6 +24,16 @@ public class KeyboardMonitor {
     private static let functionKeyCodes: Set<Int64> = [105, 107, 113] // F13, F14, F15
 
     public func start() {
+        let trusted = AXIsProcessTrusted()
+        fputs("[KeyboardMonitor] AXIsProcessTrusted=\(trusted)\n", stderr)
+
+        if !trusted {
+            // Prompt the user to grant Accessibility permission
+            let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
+            AXIsProcessTrustedWithOptions(options)
+            return
+        }
+
         let eventMask: CGEventMask =
             (1 << CGEventType.flagsChanged.rawValue) |
             (1 << CGEventType.keyDown.rawValue) |
@@ -45,7 +55,7 @@ public class KeyboardMonitor {
         )
 
         guard let tap = eventTap else {
-            print("[KeyboardMonitor] Failed to create event tap — grant Accessibility permission")
+            fputs("[KeyboardMonitor] tapCreate returned nil — AXIsProcessTrusted=\(AXIsProcessTrusted())\n", stderr)
             return
         }
 

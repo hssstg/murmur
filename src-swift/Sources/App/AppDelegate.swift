@@ -35,6 +35,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var ptt: PushToTalk!
     private var keyboard: KeyboardMonitor!
     private var audio: AudioCapture!
+    private var accessibilityRetryTimer: Timer?
     private let configStore   = ConfigStore()
     private let historyStore  = HistoryStore()
     private let hotwordStore  = HotwordStore()
@@ -49,13 +50,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         ptt = PushToTalk(config: configStore.config)
         setupPTTCallbacks()
         setupAudio()
-        setupKeyboard()
         setupTray()
 
-        // Request microphone permission early so it's ready on first PTT press
-        AVCaptureDevice.requestAccess(for: .audio) { granted in
+        // Request microphone permission first, then keyboard (accessibility).
+        // Accessibility prompt opens System Settings which steals focus and
+        // prevents the microphone dialog from appearing, so mic must go first.
+        AVCaptureDevice.requestAccess(for: .audio) { [weak self] granted in
             if !granted {
                 fputs("[murmur] microphone permission denied\n", stderr)
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                self?.setupKeyboard()
             }
         }
     }
@@ -157,6 +162,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             CGEvent(keyboardEventSource: src, virtualKey: 0x24, keyDown: false)?.post(tap: .cghidEventTap)
         }
         keyboard.start()
+        if !AXIsProcessTrusted() {
+            accessibilityRetryTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] timer in
+                guard let self else { timer.invalidate(); return }
+                if AXIsProcessTrusted() {
+                    timer.invalidate()
+                    self.accessibilityRetryTimer = nil
+                    self.keyboard.start()
+                }
+            }
+        }
     }
 
     // MARK: - Audio
@@ -181,15 +196,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     Bundle(url: $0.appendingPathComponent("murmur_murmur.bundle"))
                 }
                 // Prefer @2x for Retina; set logical size to 18pt so it renders sharp
-                if let url2x = spmBundle?.url(forResource: "tray@2x", withExtension: "png", subdirectory: "Resources"),
-                   let img = NSImage(contentsOf: url2x) {
-                    img.size = NSSize(width: 18, height: 18)
-                    return img
+                // Debug builds: images are in Resources/ subdir; release builds: at bundle root
+                for subdir in ["Resources", nil as String?] {
+                    if let url2x = spmBundle?.url(forResource: "tray@2x", withExtension: "png", subdirectory: subdir),
+                       let img = NSImage(contentsOf: url2x) {
+                        img.size = NSSize(width: 18, height: 18)
+                        return img
+                    }
+                    if let url = spmBundle?.url(forResource: "tray", withExtension: "png", subdirectory: subdir),
+                       let img = NSImage(contentsOf: url) {
+                        return img
+                    }
                 }
-                if let url = spmBundle?.url(forResource: "tray", withExtension: "png", subdirectory: "Resources") {
-                    return NSImage(contentsOf: url)
-                }
-                // Release (.app) builds: load from main bundle resources
+                // Fallback for main bundle (not currently used)
                 return NSImage(named: "tray")
             }()
             if let img = trayImage {
