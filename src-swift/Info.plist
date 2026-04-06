@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleIdentifier</key>
-    <string>com.locke.murmur</string>
+    <string>com.murmurtype</string>
     <key>CFBundleName</key>
     <string>Murmur</string>
     <key>CFBundleExecutable</key>

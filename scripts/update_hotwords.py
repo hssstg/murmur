@@ -27,7 +27,7 @@ from volcengine.base.Request import Request
 # ── 常量 ────────────────────────────────────────────────────────────────────
 LOG_FILE = '/tmp/murmur_debug.log'
 CONFIG_FILE = os.path.expanduser(
-    '~/Library/Application Support/com.locke.murmur/config.json'
+    '~/Library/Application Support/com.murmurtype/config.json'
 )
 VOLC_HOST    = 'open.volcengineapi.com'
 VOLC_SERVICE = 'speech_saas_prod'

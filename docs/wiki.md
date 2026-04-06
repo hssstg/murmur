@@ -58,6 +58,6 @@
 
 | 文件 | 内容 |
 |---|---|
-| `~/Library/Application Support/com.locke.murmur/config.json` | 所有配置项 |
-| `~/Library/Application Support/com.locke.murmur/history.json` | 识别历史（最多 1000 条）|
-| `~/Library/Application Support/com.locke.murmur/hotwords.json` | 本地热词表 |
+| `~/Library/Application Support/com.murmurtype/config.json` | 所有配置项 |
+| `~/Library/Application Support/com.murmurtype/history.json` | 识别历史（最多 1000 条）|
+| `~/Library/Application Support/com.murmurtype/hotwords.json` | 本地热词表 |

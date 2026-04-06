@@ -61,7 +61,7 @@ swift build -c release
 | LLM Base URL / 模型 | OpenAI 兼容接口，可选 |
 | 热词 AK/SK | 火山引擎热词管理凭证，可选 |
 
-配置保存在 `~/Library/Application Support/com.locke.murmur/config.json`。
+配置保存在 `~/Library/Application Support/com.murmurtype/config.json`。
 
 ## 热词管理
 

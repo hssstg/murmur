@@ -190,10 +190,10 @@ public class PushToTalk {
         return "models/sense-voice-zh-en"
     }
 
-    /// Save raw PCM (16kHz mono Int16) as WAV to ~/Library/Application Support/com.locke.murmur/recordings/
+    /// Save raw PCM (16kHz mono Int16) as WAV to ~/Library/Application Support/com.murmurtype/recordings/
     nonisolated private static func saveWav(pcm: Data) {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        let dir = appSupport.appendingPathComponent("com.locke.murmur/recordings")
+        let dir = appSupport.appendingPathComponent("com.murmurtype/recordings")
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
 
         let formatter = DateFormatter()

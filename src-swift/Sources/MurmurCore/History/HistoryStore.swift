@@ -26,7 +26,7 @@ public class HistoryStore: ObservableObject {
 
     public init() {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        let dir = appSupport.appendingPathComponent("com.locke.murmur")
+        let dir = appSupport.appendingPathComponent("com.murmurtype")
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         filePath = dir.appendingPathComponent("history.json")
         load()

@@ -53,7 +53,7 @@ CGEventTap (KeyboardMonitor)
 | `ASR/VolcengineProtocol.swift` | Binary protocol encode/decode for ASR packets |
 | `LLM/LLMClient.swift` | OpenAI-compatible API client for text polishing and hotword extraction |
 | `PTT/PushToTalk.swift` | Session orchestration; state machine with generation counters for race safety |
-| `Config/AppConfig.swift` | JSON config at `~/Library/Application Support/com.locke.murmur/config.json` |
+| `Config/AppConfig.swift` | JSON config at `~/Library/Application Support/com.murmurtype/config.json` |
 | `Text/TextInserter.swift` | CGEvent keystroke injection to frontmost app |
 | `History/HistoryStore.swift` | Local dictation history persistence |
 | `Hotwords/` | HotwordStore + VolcHotwordsClient for Volcengine hot words API |

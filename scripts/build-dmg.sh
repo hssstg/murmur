@@ -8,7 +8,7 @@ REPO="$(cd "$SCRIPT_DIR/.." && pwd)"
 SWIFT_DIR="$REPO/src-swift"
 
 APP_NAME="Murmur"
-BUNDLE_ID="com.locke.murmur"
+BUNDLE_ID="com.murmurtype"
 VERSION="${1:-$(defaults read "$SWIFT_DIR/Info.plist" CFBundleShortVersionString 2>/dev/null || echo "2.0")}"
 
 DIST_DIR="$REPO/dist"

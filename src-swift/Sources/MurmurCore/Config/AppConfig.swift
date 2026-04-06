@@ -67,7 +67,7 @@ public class ConfigStore {
 
     public static var configURL: URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dir = appSupport.appendingPathComponent("com.locke.murmur")
+        let dir = appSupport.appendingPathComponent("com.murmurtype")
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir.appendingPathComponent("config.json")
     }

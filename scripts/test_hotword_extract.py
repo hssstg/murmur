@@ -2,7 +2,7 @@
 """直接调 LLM 测试热词提取，数据来自 murmur 本地文件"""
 import json, urllib.request, datetime, os
 
-APP_SUPPORT = os.path.expanduser("~/Library/Application Support/com.locke.murmur")
+APP_SUPPORT = os.path.expanduser("~/Library/Application Support/com.murmurtype")
 
 with open(f"{APP_SUPPORT}/config.json") as f:
     cfg = json.load(f)
