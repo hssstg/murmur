@@ -15,6 +15,7 @@ public class KeyboardMonitor {
     private var tapRunLoop: CFRunLoop?
     private var pttActive = false
     private var lastFlags: CGEventFlags = []
+    private var healthTimer: Timer?
 
     public init(hotkey: String, mouseEnterBtn: String? = nil) {
         self.hotkey = hotkey
@@ -68,9 +69,23 @@ public class KeyboardMonitor {
             CFRunLoopRun()
         }
         tapThread?.start()
+
+        // Periodically check if tap is still alive; re-enable if disabled
+        nonisolated(unsafe) let unsafeTap = tap
+        nonisolated(unsafe) let unsafeSelf = self
+        DispatchQueue.main.async {
+            unsafeSelf.healthTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
+                if !CGEvent.tapIsEnabled(tap: unsafeTap) {
+                    fputs("[KeyboardMonitor] tap was disabled — re-enabling\n", stderr)
+                    CGEvent.tapEnable(tap: unsafeTap, enable: true)
+                }
+            }
+        }
     }
 
     public func stop() {
+        healthTimer?.invalidate()
+        healthTimer = nil
         if let tap = eventTap {
             CGEvent.tapEnable(tap: tap, enable: false)
         }

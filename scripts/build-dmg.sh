@@ -43,6 +43,22 @@ if [ -d "$BUNDLE_SRC" ]; then
     cp -R "$BUNDLE_SRC" "$APP_BUNDLE/Contents/MacOS/"
 fi
 
+# Copy ASR model files into Resources/
+MODEL_SRC="$REPO/models/streaming-paraformer-zh-en"
+if [ -d "$MODEL_SRC" ]; then
+    mkdir -p "$APP_BUNDLE/Contents/Resources/models/streaming-paraformer-zh-en"
+    cp "$MODEL_SRC"/encoder.int8.onnx "$MODEL_SRC"/decoder.int8.onnx "$MODEL_SRC"/tokens.txt \
+       "$APP_BUNDLE/Contents/Resources/models/streaming-paraformer-zh-en/"
+fi
+
+# Copy punctuation model
+PUNCT_SRC="$REPO/models/punct-ct-transformer-zh-en"
+if [ -d "$PUNCT_SRC" ]; then
+    mkdir -p "$APP_BUNDLE/Contents/Resources/models/punct-ct-transformer-zh-en"
+    cp "$PUNCT_SRC"/model.onnx \
+       "$APP_BUNDLE/Contents/Resources/models/punct-ct-transformer-zh-en/"
+fi
+
 # Patch Info.plist version
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$APP_BUNDLE/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $VERSION"            "$APP_BUNDLE/Contents/Info.plist"

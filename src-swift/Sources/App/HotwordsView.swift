@@ -45,10 +45,6 @@ struct HotwordsView: View {
     let config: AppConfig
 
     @State private var newWord      = ""
-    @State private var syncStatus   = ""
-    @State private var syncIsError  = false
-    @State private var syncing      = false
-    @State private var fetching     = false
     @State private var extracting   = false
     @State private var suggestions: [String] = []
     @State private var extractError = ""
@@ -69,18 +65,7 @@ struct HotwordsView: View {
             Divider()
 
             // Tag cloud
-            if fetching {
-                Spacer()
-                HStack {
-                    Spacer()
-                    VStack(spacing: 8) {
-                        ProgressView()
-                        Text(L("hotwords.fetching")).foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                }
-                Spacer()
-            } else if store.words.isEmpty {
+            if store.words.isEmpty {
                 Spacer()
                 HStack {
                     Spacer()
@@ -145,6 +130,7 @@ struct HotwordsView: View {
                         .foregroundStyle(.red)
                         .lineLimit(1)
                 }
+                Spacer()
                 Button {
                     Task { await extractHotwords() }
                 } label: {
@@ -153,29 +139,10 @@ struct HotwordsView: View {
                 }
                 .disabled(extracting || config.llm_base_url.isEmpty)
                 .help(Text(config.llm_base_url.isEmpty ? L("hotwords.extract.help.nollm") : L("hotwords.extract.help")))
-                Spacer()
-                if !syncStatus.isEmpty {
-                    Text(syncStatus)
-                        .font(.caption)
-                        .foregroundStyle(syncIsError ? .red : .green)
-                        .lineLimit(1)
-                }
-                Button {
-                    Task { await syncToVolcengine() }
-                } label: {
-                    if syncing { ProgressView().controlSize(.small) }
-                    else { Label(L("hotwords.sync.button"), systemImage: "arrow.triangle.2.circlepath") }
-                }
-                .disabled(syncing || store.words.isEmpty || config.hotwords_ak.isEmpty || config.hotwords_sk.isEmpty)
-                .help(Text(config.hotwords_ak.isEmpty ? L("hotwords.sync.help.nocreds") : L("hotwords.sync.help")))
             }
             .padding()
         }
         .frame(minWidth: 400, minHeight: 320)
-        .onAppear {
-            guard !config.hotwords_ak.isEmpty, store.words.isEmpty else { return }
-            Task { await fetchFromVolcengine() }
-        }
     }
 
     private func addWord() {
@@ -183,44 +150,6 @@ struct HotwordsView: View {
         guard !w.isEmpty else { return }
         store.add(w)
         newWord = ""
-    }
-
-    private func syncToVolcengine() async {
-        syncing = true; syncStatus = ""; syncIsError = false
-        defer { syncing = false }
-        do {
-            let wordCount = try await VolcHotwordsClient.sync(
-                ak: config.hotwords_ak, sk: config.hotwords_sk,
-                appId: config.api_app_id, tableName: config.asr_vocabulary,
-                words: store.words)
-            if let count = wordCount {
-                syncStatus = String(format: L("hotwords.sync.success"), count)
-            } else {
-                syncStatus = L("hotwords.sync.success.unknown")
-            }
-        } catch {
-            syncIsError = true
-            syncStatus = String(format: L("hotwords.sync.error"), error.localizedDescription)
-        }
-    }
-
-    private func fetchFromVolcengine() async {
-        fetching = true; syncStatus = ""; syncIsError = false
-        defer { fetching = false }
-        do {
-            guard let words = try await VolcHotwordsClient.fetchWords(
-                ak: config.hotwords_ak, sk: config.hotwords_sk,
-                appId: config.api_app_id, tableName: config.asr_vocabulary)
-            else {
-                syncStatus = L("hotwords.fetch.nolist")
-                return
-            }
-            store.replaceAll(words)
-            syncStatus = String(format: L("hotwords.fetch.success"), words.count)
-        } catch {
-            syncIsError = true
-            syncStatus = String(format: L("hotwords.fetch.error"), error.localizedDescription)
-        }
     }
 
     private func extractHotwords() async {

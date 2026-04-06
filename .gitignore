@@ -28,3 +28,10 @@ dist-ssr
 
 # Git worktrees
 .worktrees/
+
+# ASR model files (large, download separately)
+models/**/*.onnx
+
+# sherpa-onnx local package binaries
+src-swift/LocalPackages/SherpaOnnx/sherpa-onnx.xcframework/
+src-swift/LocalPackages/SherpaOnnx/libs/

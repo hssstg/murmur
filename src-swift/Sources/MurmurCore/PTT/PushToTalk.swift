@@ -12,15 +12,29 @@ public class PushToTalk {
     public var onAudioLevels:  (([Float]) -> Void)?
 
     private var config: AppConfig
-    private var client: VolcengineClient?
+    private var recognizer: SherpaRecognizer?
     private var latestResult: ASRResult?
     private var idleTimer: Task<Void, Never>?
     private var peakRms: Float = 0
     private var sessionGeneration: Int = 0
-    private var pendingChunks: [Data] = []
+    private var audioBuffer: Data = Data()  // accumulate PCM for saving
 
     public init(config: AppConfig) {
         self.config = config
+        // Pre-load recognizer on a background thread
+        Task.detached { [weak self] in
+            let modelDir = Self.modelDirectory()
+            fputs("[PushToTalk] loading model from \(modelDir)\n", stderr)
+            let rec = SherpaRecognizer(modelDir: modelDir)
+            await MainActor.run { [weak self] in
+                self?.recognizer = rec
+                if rec == nil {
+                    fputs("[PushToTalk] WARNING: model failed to load\n", stderr)
+                } else {
+                    fputs("[PushToTalk] model ready\n", stderr)
+                }
+            }
+        }
     }
 
     public func updateConfig(_ cfg: AppConfig) {
@@ -30,10 +44,20 @@ public class PushToTalk {
     // MARK: - PTT events
 
     public func handleStart() {
-        guard !isSessionActive else { return }
+        fputs("[PTT] handleStart called, isSessionActive=\(isSessionActive)\n", stderr)
+        guard !isSessionActive else {
+            fputs("[PTT] handleStart skipped — session already active\n", stderr)
+            return
+        }
+        guard let rec = recognizer else {
+            fputs("[PTT] handleStart skipped — recognizer not loaded\n", stderr)
+            return
+        }
+
         sessionGeneration += 1
         let myGeneration = sessionGeneration
         isSessionActive = true
+        fputs("[PTT] session \(myGeneration) starting\n", stderr)
         idleTimer?.cancel()
         idleTimer = nil
 
@@ -41,81 +65,70 @@ public class PushToTalk {
         peakRms = 0
         latestResult = nil
         currentText = ""
-        setStatus(.connecting)
+        audioBuffer = Data()
 
-        Task { @MainActor [weak self] in
-            guard let self = self else { return }
-            let client = VolcengineClient(config: VolcengineConfig(from: self.config))
-
-            client.onResult = { [weak self] result in
-                Task { @MainActor [weak self] in
-                    self?.latestResult = result
-                    self?.currentText = result.text
-                    self?.onTextChange?(result.text)
+        rec.onResult = { [weak self] result in
+            Task { @MainActor [weak self] in
+                self?.latestResult = result
+                self?.currentText = result.text
+                self?.onTextChange?(result.text)
+            }
+        }
+        rec.onStatus = { [weak self] s in
+            Task { @MainActor [weak self] in
+                if s == .listening || s == .processing || s == .done {
+                    self?.setStatus(s)
                 }
             }
-            client.onStatus = { [weak self] s in
-                Task { @MainActor [weak self] in
-                    // Only propagate listening/processing/done — connecting already set
-                    if s == .listening || s == .processing || s == .done {
-                        self?.setStatus(s)
-                    }
-                }
-            }
-            client.onError = { [weak self] _ in
-                Task { @MainActor [weak self] in
-                    guard let self, self.sessionGeneration == myGeneration else { return }
-                    self.client = nil
-                    self.isSessionActive = false
-                    self.setStatus(.idle)
-                }
-            }
-
-            // Assign to self before connecting so audio callbacks can reach it
-            self.client = client
-
-            do {
-                try await client.connect()
-                // Flush chunks that arrived before the client was assigned.
-                // Must happen after connect() so connectionState == "connected" and sendAudio() works.
-                let buffered = self.pendingChunks
-                self.pendingChunks = []
-                for chunk in buffered { client.sendAudio(chunk) }
-            } catch {
-                guard self.sessionGeneration == myGeneration else { return }
-                self.client = nil
+        }
+        rec.onError = { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self, self.sessionGeneration == myGeneration else { return }
                 self.isSessionActive = false
-                self.pendingChunks = []
                 self.setStatus(.idle)
             }
         }
+
+        setStatus(.listening)
+        rec.startSession()
     }
 
     public func handleStop() {
-        guard isSessionActive else { return }
+        fputs("[PTT] handleStop called, isSessionActive=\(isSessionActive)\n", stderr)
+        guard isSessionActive else {
+            fputs("[PTT] handleStop skipped — no active session\n", stderr)
+            return
+        }
         let myGeneration = sessionGeneration
-        setStatus(.processing)
-
-        let capturedClient = client
-        client = nil
         isSessionActive = false
-        pendingChunks = []
+        fputs("[PTT] session \(myGeneration) stopping\n", stderr)
+
+        // Save audio to WAV for benchmark (skip if < 0.5s)
+        let savedAudio = audioBuffer
+        audioBuffer = Data()
+        if savedAudio.count > 16000 {  // 16000 bytes = 0.5s at 16kHz 16bit mono
+            Task.detached { Self.saveWav(pcm: savedAudio) }
+        }
+
+        guard let rec = recognizer else {
+            setStatus(.idle)
+            return
+        }
+
+        setStatus(.processing)
+        fputs("[PTT] session \(myGeneration) calling finishAudio\n", stderr)
+        rec.finishAudio()
 
         Task { @MainActor [weak self] in
             guard let self = self else { return }
-            guard let c = capturedClient else {
-                self.setStatus(.idle)
-                return
-            }
-
-            c.finishAudio()
-
             guard self.sessionGeneration == myGeneration else {
-                c.disconnect()
+                fputs("[PTT] session \(myGeneration) generation mismatch, bailing\n", stderr)
+                rec.stopSession()
                 return
             }
-            let finalResult = await self.waitForFinalResult(client: c, timeout: 3.0)
-            c.disconnect()
+            fputs("[PTT] session \(myGeneration) waiting for final result...\n", stderr)
+            let finalResult = await self.waitForFinalResult(recognizer: rec, timeout: 3.0)
+            fputs("[PTT] session \(myGeneration) got result: \(finalResult?.text ?? "(nil)")\n", stderr)
 
             let cfg = self.config
             var textToInsert = finalResult?.text ?? ""
@@ -134,19 +147,18 @@ public class PushToTalk {
             if textToInsert.isEmpty {
                 self.currentText = ""
                 self.setStatus(.idle)
+                fputs("[PTT] session \(myGeneration) done (empty)\n", stderr)
             } else {
                 self.setStatus(.done)
                 self.scheduleIdleReset(after: 0.8)
+                fputs("[PTT] session \(myGeneration) done: \(textToInsert)\n", stderr)
             }
         }
     }
 
     public func handleAudioChunk(_ data: Data) {
-        if let client = client {
-            client.sendAudio(data)
-        } else if isSessionActive {
-            pendingChunks.append(data)
-        }
+        recognizer?.sendAudio(data)
+        audioBuffer.append(data)
 
         let count = data.count / 2
         guard count > 0 else { return }
@@ -179,7 +191,7 @@ public class PushToTalk {
         }
     }
 
-    private func waitForFinalResult(client: VolcengineClient, timeout: Double) async -> ASRResult? {
+    private func waitForFinalResult(recognizer rec: SherpaRecognizer, timeout: Double) async -> ASRResult? {
         await withCheckedContinuation { cont in
             nonisolated(unsafe) var resolved = false
             let lock = NSLock()
@@ -193,7 +205,7 @@ public class PushToTalk {
 
             let capturedLatest = latestResult
 
-            client.onResult = { [weak self] r in
+            rec.onResult = { [weak self] r in
                 Task { @MainActor [weak self] in
                     self?.latestResult = r
                     self?.currentText = r.text
@@ -201,7 +213,7 @@ public class PushToTalk {
                 }
                 if r.isFinal { resolve(r) }
             }
-            client.onStatus = { [weak self] s in
+            rec.onStatus = { [weak self] s in
                 if s == .done || s == .idle {
                     Task { @MainActor [weak self] in
                         let latest = self?.latestResult ?? capturedLatest
@@ -215,5 +227,66 @@ public class PushToTalk {
                 resolve(self?.latestResult ?? capturedLatest)
             }
         }
+    }
+
+    /// Returns the path to the model directory bundled with the app.
+    nonisolated private static func modelDirectory() -> String {
+        // Release .app bundle: Contents/Resources/models/
+        if let resourcePath = Bundle.main.resourcePath {
+            let bundled = (resourcePath as NSString).appendingPathComponent("models/streaming-paraformer-zh-en")
+            if FileManager.default.fileExists(atPath: (bundled as NSString).appendingPathComponent("encoder.int8.onnx")) {
+                return bundled
+            }
+        }
+
+        // Development fallback: models/ in the repo root
+        let cwd = FileManager.default.currentDirectoryPath as NSString
+        let devPath = cwd.appendingPathComponent("models/streaming-paraformer-zh-en")
+        if FileManager.default.fileExists(atPath: (devPath as NSString).appendingPathComponent("encoder.int8.onnx")) {
+            return devPath
+        }
+
+        // Last resort
+        return "/Users/locke/workspace/murmur/models/streaming-paraformer-zh-en"
+    }
+
+    /// Save raw PCM (16kHz mono Int16) as WAV to ~/Library/Application Support/com.locke.murmur/recordings/
+    nonisolated private static func saveWav(pcm: Data) {
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let dir = appSupport.appendingPathComponent("com.locke.murmur/recordings")
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
+        let filename = formatter.string(from: Date()) + ".wav"
+        let url = dir.appendingPathComponent(filename)
+
+        // WAV header for 16kHz mono 16-bit PCM
+        let sampleRate: UInt32 = 16000
+        let channels: UInt16 = 1
+        let bitsPerSample: UInt16 = 16
+        let byteRate = sampleRate * UInt32(channels) * UInt32(bitsPerSample / 8)
+        let blockAlign = channels * (bitsPerSample / 8)
+        let dataSize = UInt32(pcm.count)
+
+        var header = Data()
+        header.append(contentsOf: "RIFF".utf8)
+        header.append(contentsOf: withUnsafeBytes(of: (36 + dataSize).littleEndian) { Array($0) })
+        header.append(contentsOf: "WAVE".utf8)
+        header.append(contentsOf: "fmt ".utf8)
+        header.append(contentsOf: withUnsafeBytes(of: UInt32(16).littleEndian) { Array($0) })  // chunk size
+        header.append(contentsOf: withUnsafeBytes(of: UInt16(1).littleEndian) { Array($0) })   // PCM
+        header.append(contentsOf: withUnsafeBytes(of: channels.littleEndian) { Array($0) })
+        header.append(contentsOf: withUnsafeBytes(of: sampleRate.littleEndian) { Array($0) })
+        header.append(contentsOf: withUnsafeBytes(of: byteRate.littleEndian) { Array($0) })
+        header.append(contentsOf: withUnsafeBytes(of: blockAlign.littleEndian) { Array($0) })
+        header.append(contentsOf: withUnsafeBytes(of: bitsPerSample.littleEndian) { Array($0) })
+        header.append(contentsOf: "data".utf8)
+        header.append(contentsOf: withUnsafeBytes(of: dataSize.littleEndian) { Array($0) })
+
+        var wav = header
+        wav.append(pcm)
+        try? wav.write(to: url)
+        fputs("[PushToTalk] saved \(filename) (\(pcm.count / 2 / 16000)s)\n", stderr)
     }
 }

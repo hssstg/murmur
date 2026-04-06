@@ -1,0 +1,120 @@
+import Foundation
+import CSherpaOnnx
+import MurmurCore
+
+// Benchmark: measure model load time and decode throughput
+
+let modelDir = "/Users/locke/workspace/murmur/models/streaming-paraformer-zh-en"
+
+// 1. Model load time
+let loadStart = CFAbsoluteTimeGetCurrent()
+let encoderPath = (modelDir as NSString).appendingPathComponent("encoder.int8.onnx")
+let decoderPath = (modelDir as NSString).appendingPathComponent("decoder.int8.onnx")
+let tokensPath  = (modelDir as NSString).appendingPathComponent("tokens.txt")
+
+var config = SherpaOnnxOnlineRecognizerConfig(
+    feat_config: SherpaOnnxFeatureConfig(sample_rate: 16000, feature_dim: 80),
+    model_config: SherpaOnnxOnlineModelConfig(
+        transducer: SherpaOnnxOnlineTransducerModelConfig(
+            encoder: strdup(""), decoder: strdup(""), joiner: strdup("")
+        ),
+        paraformer: SherpaOnnxOnlineParaformerModelConfig(
+            encoder: strdup(encoderPath), decoder: strdup(decoderPath)
+        ),
+        zipformer2_ctc: SherpaOnnxOnlineZipformer2CtcModelConfig(model: strdup("")),
+        tokens: strdup(tokensPath),
+        num_threads: 2,
+        provider: strdup("cpu"),
+        debug: 0,
+        model_type: strdup("paraformer"),
+        modeling_unit: strdup("cjkchar"),
+        bpe_vocab: strdup(""),
+        tokens_buf: strdup(""),
+        tokens_buf_size: 0,
+        nemo_ctc: SherpaOnnxOnlineNemoCtcModelConfig(model: strdup("")),
+        t_one_ctc: SherpaOnnxOnlineToneCtcModelConfig(model: strdup(""))
+    ),
+    decoding_method: strdup("greedy_search"),
+    max_active_paths: 4,
+    enable_endpoint: 1,
+    rule1_min_trailing_silence: 2.4,
+    rule2_min_trailing_silence: 0.8,
+    rule3_min_utterance_length: 30,
+    hotwords_file: strdup(""),
+    hotwords_score: 1.5,
+    ctc_fst_decoder_config: SherpaOnnxOnlineCtcFstDecoderConfig(
+        graph: strdup(""), max_active: 3000
+    ),
+    rule_fsts: strdup(""),
+    rule_fars: strdup(""),
+    blank_penalty: 0.0,
+    hotwords_buf: strdup(""),
+    hotwords_buf_size: 0,
+    hr: SherpaOnnxHomophoneReplacerConfig(
+        dict_dir: strdup(""), lexicon: strdup(""), rule_fsts: strdup("")
+    )
+)
+
+guard let rec = SherpaOnnxCreateOnlineRecognizer(&config) else {
+    print("ERROR: Failed to create recognizer")
+    exit(1)
+}
+let loadTime = CFAbsoluteTimeGetCurrent() - loadStart
+print("Model load time: \(String(format: "%.2f", loadTime))s")
+
+// 2. Stream creation time
+let streamStart = CFAbsoluteTimeGetCurrent()
+let stream = SherpaOnnxCreateOnlineStream(rec)!
+let streamTime = CFAbsoluteTimeGetCurrent() - streamStart
+print("Stream create time: \(String(format: "%.4f", streamTime))s")
+
+// 3. Generate 3 seconds of silence (16kHz mono float32) and measure decode throughput
+let sampleRate: Int32 = 16000
+let durationSec = 3.0
+let numSamples = Int(Double(sampleRate) * durationSec)
+var silence = [Float](repeating: 0.0, count: numSamples)
+// Add some noise so it's not pure silence
+for i in 0..<numSamples {
+    silence[i] = Float.random(in: -0.001...0.001)
+}
+
+let chunkSize = 3200 // 200ms chunks (16000 * 0.2)
+var offset = 0
+
+let decodeStart = CFAbsoluteTimeGetCurrent()
+var decodeCount = 0
+
+while offset < numSamples {
+    let end = min(offset + chunkSize, numSamples)
+    let chunk = Array(silence[offset..<end])
+    SherpaOnnxOnlineStreamAcceptWaveform(stream, sampleRate, chunk, Int32(chunk.count))
+
+    while SherpaOnnxIsOnlineStreamReady(rec, stream) != 0 {
+        SherpaOnnxDecodeOnlineStream(rec, stream)
+        decodeCount += 1
+    }
+    offset = end
+}
+
+SherpaOnnxOnlineStreamInputFinished(stream)
+while SherpaOnnxIsOnlineStreamReady(rec, stream) != 0 {
+    SherpaOnnxDecodeOnlineStream(rec, stream)
+    decodeCount += 1
+}
+
+let decodeTime = CFAbsoluteTimeGetCurrent() - decodeStart
+let rtf = decodeTime / durationSec
+
+if let resultPtr = SherpaOnnxGetOnlineStreamResult(rec, stream) {
+    let text = resultPtr.pointee.text.map { String(cString: $0) } ?? ""
+    SherpaOnnxDestroyOnlineRecognizerResult(resultPtr)
+    print("Result text: '\(text)'")
+}
+
+print("Decode time for \(String(format: "%.1f", durationSec))s audio: \(String(format: "%.3f", decodeTime))s")
+print("RTF (Real-Time Factor): \(String(format: "%.3f", rtf)) (< 1.0 = faster than real-time)")
+print("Decode calls: \(decodeCount)")
+print("Decode speed: \(String(format: "%.1f", durationSec / decodeTime))x real-time")
+
+SherpaOnnxDestroyOnlineStream(stream)
+SherpaOnnxDestroyOnlineRecognizer(rec)

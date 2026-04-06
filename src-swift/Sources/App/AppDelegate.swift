@@ -39,8 +39,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private let configStore   = ConfigStore()
     private let historyStore  = HistoryStore()
     private let hotwordStore  = HotwordStore()
-    private var activeStartTask: Task<Void, Never>?
-    private var pttStopRequestedDuringStart = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)  // no Dock icon
@@ -106,47 +104,29 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         keyboard = KeyboardMonitor(hotkey: cfg.hotkey, mouseEnterBtn: cfg.mouse_enter_btn)
 
         keyboard.onPTTStart = { [weak self] in
+            fputs("[AppDelegate] onPTTStart fired\n", stderr)
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                guard self.activeStartTask == nil else { return }
-                self.pttStopRequestedDuringStart = false
                 let audio = self.audio!
                 let deviceUID = self.configStore.config.microphone
                 let ptt = self.ptt!
-                let task = Task.detached(priority: .userInitiated) {
+                // audio.start must run nonisolated (AVAudioEngine installTap
+                // closure inherits caller's actor isolation — crashes if MainActor)
+                Task.detached {
                     do {
                         try audio.start(deviceUID: deviceUID)
                     } catch {
                         fputs("[murmur] audio.start failed: \(error)\n", stderr)
-                        await MainActor.run { [weak self] in self?.activeStartTask = nil }
-                        return  // no audio — don't open a PTT session
-                    }
-                    // Hop back to main actor to check if PTT was released during startup
-                    let shouldStop = await MainActor.run { [weak self] () -> Bool in
-                        guard let self = self else { return true }
-                        self.activeStartTask = nil
-                        return self.pttStopRequestedDuringStart
-                    }
-                    if shouldStop {
-                        // Stop already fired — undo the start and bail
-                        audio.stop()
                         return
                     }
                     await ptt.handleStart()
                 }
-                self.activeStartTask = task
             }
         }
         keyboard.onPTTStop = { [weak self] in
+            fputs("[AppDelegate] onPTTStop fired\n", stderr)
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                if self.activeStartTask != nil {
-                    // Start is still in flight — flag it to abort when it lands
-                    self.pttStopRequestedDuringStart = true
-                    // Do NOT nil activeStartTask — let the task clear it when done,
-                    // so a subsequent press stays blocked until the task fully exits.
-                    return
-                }
                 self.audio.stop()
                 self.ptt.handleStop()
             }
