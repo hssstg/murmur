@@ -11,7 +11,7 @@ public class SherpaRecognizer: @unchecked Sendable {
     private let recognizer: OpaquePointer
     private let lock = NSLock()
 
-    private static let silenceRmsThreshold: Float = 0.005
+    private static let silenceRmsThreshold: Float = 0.02
 
     // Accumulated Float32 audio for the current session
     private var audioBuffer: [Float] = []
@@ -97,7 +97,7 @@ public class SherpaRecognizer: @unchecked Sendable {
         }
 
         let duration = Double(samples.count) / 16000.0
-        fputs("[SherpaRecognizer] decoding \(String(format: "%.1f", duration))s audio...\n", stderr)
+        fputs("[SherpaRecognizer] decoding \(String(format: "%.1f", duration))s audio (rms=\(String(format: "%.4f", rms)))...\n", stderr)
 
         // Run offline decode on a background thread to avoid blocking the caller.
         // Dispatch callbacks back to main thread to avoid data races on closure properties.
