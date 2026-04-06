@@ -15,8 +15,8 @@ sealed class AsrEvent {
 class VolcengineClient {
 
     companion object {
-        private const val APP_ID       = "7232385834"
-        private const val ACCESS_TOKEN = "5lSRCDzbb2KgBjEtKJbT9NIsU-z2z-F_"
+        private val APP_ID       = System.getenv("VOLCENGINE_APP_ID") ?: ""
+        private val ACCESS_TOKEN = System.getenv("VOLCENGINE_ACCESS_TOKEN") ?: ""
         private const val RESOURCE_ID  = "volc.bigasr.sauc.duration"
         private val http = OkHttpClient()
     }

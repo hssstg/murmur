@@ -125,10 +125,17 @@ private class CapsuleView: NSView {
     required init?(coder: NSCoder) { fatalError() }
 
     func update(status: ASRStatus, text: String, levels: [Float]) {
-        currentText = text
-        label.stringValue = text
-        label.isHidden = text.isEmpty
-        bars.isHidden = !text.isEmpty
+        let displayText: String
+        if status == .polishing {
+            displayText = "Refining..."
+        } else {
+            displayText = text
+        }
+        currentText = displayText
+        label.stringValue = displayText
+        label.isHidden = displayText.isEmpty
+        label.alphaValue = status == .polishing ? 0.55 : 0.92
+        bars.isHidden = !displayText.isEmpty
         bars.setLevels(levels, active: status == .listening)
     }
 

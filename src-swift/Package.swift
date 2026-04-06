@@ -27,13 +27,5 @@ let package = Package(
             dependencies: ["MurmurCore"],
             path: "Tests/MurmurTests"
         ),
-        .executableTarget(
-            name: "BenchmarkASR",
-            dependencies: [
-                "MurmurCore",
-                .product(name: "CSherpaOnnx", package: "SherpaOnnx"),
-            ],
-            path: "Sources/BenchmarkASR"
-        ),
     ]
 )

@@ -185,8 +185,9 @@ public class PushToTalk {
             return devPath
         }
 
-        // Last resort
-        return "/Users/locke/workspace/murmur/models/sense-voice-zh-en"
+        // Last resort — should not reach here in normal operation
+        fputs("[PushToTalk] WARNING: no model directory found\n", stderr)
+        return "models/sense-voice-zh-en"
     }
 
     /// Save raw PCM (16kHz mono Int16) as WAV to ~/Library/Application Support/com.locke.murmur/recordings/

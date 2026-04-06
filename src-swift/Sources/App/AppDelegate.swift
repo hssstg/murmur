@@ -107,9 +107,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             fputs("[AppDelegate] onPTTStart fired\n", stderr)
             Task { @MainActor [weak self] in
                 guard let self else { return }
+                // handleStart first — sets status and shows window immediately
+                self.ptt.handleStart()
                 let audio = self.audio!
                 let deviceUID = self.configStore.config.microphone
-                let ptt = self.ptt!
                 // audio.start must run nonisolated (AVAudioEngine installTap
                 // closure inherits caller's actor isolation — crashes if MainActor)
                 Task.detached {
@@ -117,9 +118,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                         try audio.start(deviceUID: deviceUID)
                     } catch {
                         fputs("[murmur] audio.start failed: \(error)\n", stderr)
-                        return
                     }
-                    await ptt.handleStart()
                 }
             }
         }
