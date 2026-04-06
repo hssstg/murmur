@@ -3,14 +3,19 @@ import MurmurCore
 
 // MARK: - FloatingWindow
 
-class FloatingWindow: NSWindow {
+class FloatingWindow: NSPanel {
     override var canBecomeKey: Bool  { false }
     override var canBecomeMain: Bool { false }
 
+    private let capsule: CapsuleView
+    private var isShowing = false
+    private let capsuleH: CGFloat = 56
+
     init() {
+        capsule = CapsuleView(frame: NSRect(x: 0, y: 0, width: 76, height: 56))
         super.init(
-            contentRect: NSRect(x: 0, y: 0, width: 320, height: 52),
-            styleMask: .borderless,
+            contentRect: NSRect(x: 0, y: 0, width: 76, height: 56),
+            styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
         )
@@ -20,20 +25,18 @@ class FloatingWindow: NSWindow {
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         hasShadow = true
         ignoresMouseEvents = true
-        contentView = FloatingView(frame: NSRect(x: 0, y: 0, width: 320, height: 52))
+        isMovableByWindowBackground = false
+        contentView = capsule
     }
 
     func update(status: ASRStatus, text: String, levels: [Float]) {
-        guard let view = contentView as? FloatingView else { return }
-        view.status = status
-        view.text = text
-        view.targetLevels = levels
-        view.needsDisplay = true
+        capsule.update(status: status, text: text, levels: levels)
 
         if status == .idle {
-            orderOut(nil)
-        } else if !isVisible {
-            orderFront(nil)
+            animateOut()
+        } else {
+            if !isShowing { animateIn() }
+            resizeCapsule(for: text)
         }
     }
 
@@ -41,193 +44,180 @@ class FloatingWindow: NSWindow {
         let screen = NSScreen.screens.first(where: { NSMouseInRect(point, $0.frame, false) }) ?? NSScreen.main
         guard let screen = screen else { return }
         let sf = screen.visibleFrame
-        let origin = NSPoint(
-            x: sf.midX - frame.width / 2,
-            y: sf.minY + 80
-        )
-        setFrameOrigin(origin)
+        setFrameOrigin(NSPoint(x: sf.midX - frame.width / 2, y: sf.minY + 80))
+    }
+
+    // MARK: - Private
+
+    private func resizeCapsule(for text: String) {
+        let targetW = capsule.desiredWidth(for: text)
+        guard abs(frame.width - targetW) > 2 else { return }
+        let midX = (screen ?? NSScreen.main)?.visibleFrame.midX ?? frame.midX
+        let newFrame = NSRect(x: midX - targetW / 2, y: frame.minY, width: targetW, height: capsuleH)
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.25
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            self.animator().setFrame(newFrame, display: true)
+        }
+    }
+
+    private func animateIn() {
+        isShowing = true
+        // Set correct size before showing
+        let targetW = capsule.desiredWidth(for: capsule.currentText)
+        let midX = (screen ?? NSScreen.main)?.visibleFrame.midX ?? frame.midX
+        setFrame(NSRect(x: midX - targetW / 2, y: frame.minY, width: targetW, height: capsuleH), display: true)
+        alphaValue = 1
+        orderFront(nil)
+    }
+
+    private func animateOut() {
+        guard isShowing else { return }
+        isShowing = false
+        NSAnimationContext.runAnimationGroup({ ctx in
+            ctx.duration = 0.22
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
+            ctx.allowsImplicitAnimation = true
+            self.capsule.layer?.transform = CATransform3DMakeScale(0.85, 0.85, 1)
+            self.animator().alphaValue = 0
+        }, completionHandler: { [weak self] in
+            self?.orderOut(nil)
+            self?.capsule.layer?.transform = CATransform3DIdentity
+            self?.alphaValue = 1
+        })
     }
 }
 
-// MARK: - FloatingView
+// MARK: - CapsuleView
 
-class FloatingView: NSView {
-    var status: ASRStatus = .idle
-    var text: String = ""
-    var targetLevels: [Float] = Array(repeating: 0, count: 16)
+private class CapsuleView: NSView {
+    private let effectView = NSVisualEffectView()
+    private let bars = WaveformBarsView()
+    private let label = NSTextField(labelWithString: "")
+    private(set) var currentText = ""
 
-    // Smoothed overall amplitude (single scalar)
-    private var smoothAmp: CGFloat = 0.0
-    private var phase: Double = 0
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        wantsLayer = true
+
+        effectView.material = .hudWindow
+        effectView.blendingMode = .behindWindow
+        effectView.state = .active
+        effectView.appearance = NSAppearance(named: .vibrantDark)
+        effectView.wantsLayer = true
+        effectView.layer?.cornerRadius = 28
+        effectView.layer?.masksToBounds = true
+        addSubview(effectView)
+
+        addSubview(bars)
+
+        label.font = .systemFont(ofSize: 14, weight: .medium)
+        label.textColor = NSColor(white: 1, alpha: 0.92)
+        label.backgroundColor = .clear
+        label.isBezeled = false
+        label.isEditable = false
+        label.isSelectable = false
+        label.lineBreakMode = .byTruncatingTail
+        label.maximumNumberOfLines = 1
+        addSubview(label)
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    func update(status: ASRStatus, text: String, levels: [Float]) {
+        currentText = text
+        label.stringValue = text
+        label.isHidden = text.isEmpty
+        bars.isHidden = !text.isEmpty
+        bars.setLevels(levels, active: status == .listening)
+    }
+
+    func desiredWidth(for text: String) -> CGFloat {
+        if text.isEmpty { return 76 }
+        let attrs: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 14, weight: .medium)]
+        let textW = min(560, max(160, ceil((text as NSString).size(withAttributes: attrs).width) + 4))
+        return 16 + textW + 16
+    }
+
+    override func layout() {
+        super.layout()
+        effectView.frame = bounds
+        bars.frame = NSRect(x: 16, y: (bounds.height - 32) / 2, width: 44, height: 32)
+        // When text is showing, it takes the full width; when hidden, waveform is centered
+        let textX: CGFloat = 16
+        let textW = max(0, bounds.width - textX - 16)
+        label.frame = NSRect(x: textX, y: (bounds.height - 18) / 2, width: textW, height: 18)
+    }
+}
+
+// MARK: - WaveformBarsView
+
+private class WaveformBarsView: NSView {
+    private static let weights: [CGFloat] = [0.5, 0.8, 1.0, 0.75, 0.55]
+    private var smoothed: [CGFloat] = Array(repeating: 0.06, count: 5)
+    private var amplitude: CGFloat = 0
+    private var active = false
     private var animTimer: Timer?
 
-    private let cornerRadius: CGFloat = 26
-    private let pillHeight: CGFloat   = 48
+    private let barW: CGFloat = 5
+    private let barGap: CGFloat = 4.75  // (44 - 5×5) / 4
+    private let barRadius: CGFloat = 2.5
+    private let minBarH: CGFloat = 4
 
-    override var isFlipped: Bool { false }
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        wantsLayer = true
+    }
+    required init?(coder: NSCoder) { fatalError() }
 
-    // MARK: - Animation lifecycle
+    func setLevels(_ levels: [Float], active: Bool) {
+        self.active = active
+        // levels[] are already normalized to [0,1] (rms * 20, clamped)
+        // Use the latest value as current amplitude
+        amplitude = CGFloat(levels.last ?? 0)
+    }
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
-        if window != nil { startAnimation() } else { stopAnimation() }
-    }
-
-    private func startAnimation() {
-        guard animTimer == nil else { return }
-        let t = Timer(timeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in
-            self?.animTick()
+        if window != nil && animTimer == nil {
+            let t = Timer(timeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in self?.tick() }
+            RunLoop.main.add(t, forMode: .common)
+            animTimer = t
+        } else if window == nil {
+            animTimer?.invalidate()
+            animTimer = nil
         }
-        RunLoop.main.add(t, forMode: .common)
-        animTimer = t
     }
 
-    private func stopAnimation() {
-        animTimer?.invalidate()
-        animTimer = nil
-    }
-
-    private func animTick() {
-        guard status == .listening || status == .processing else { return }
-
-        // RMS of incoming levels → single amplitude scalar
-        let rms = sqrt(targetLevels.map { $0 * $0 }.reduce(0, +) / Float(max(1, targetLevels.count)))
-        let target = CGFloat(max(0.08, rms * 3.2))
-        let α: CGFloat = target > smoothAmp ? 0.30 : 0.05   // fast rise, slow fall
-        smoothAmp += α * (target - smoothAmp)
-
-        phase += 0.055   // ~3.3 rad/s → one cycle ≈ 1.9 s
+    private func tick() {
+        for i in 0..<5 {
+            let target: CGFloat
+            if active {
+                let jitter = CGFloat.random(in: -0.04...0.04)
+                target = max(0.06, amplitude * Self.weights[i] * (1.0 + jitter))
+            } else {
+                target = 0.06
+            }
+            let rate: CGFloat = target > smoothed[i] ? 0.4 : 0.15
+            smoothed[i] += rate * (target - smoothed[i])
+        }
         needsDisplay = true
     }
 
-    // MARK: - Drawing
-
     override func draw(_ dirtyRect: NSRect) {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+        let totalW = 5 * barW + 4 * barGap
+        let startX = (bounds.width - totalW) / 2
 
-        let pillRect = CGRect(
-            x: 0, y: (bounds.height - pillHeight) / 2,
-            width: bounds.width, height: pillHeight
-        )
+        ctx.setFillColor(NSColor(red: 0.82, green: 0.9, blue: 1.0, alpha: 0.88).cgColor)
 
-        // Background pill
-        ctx.setFillColor(NSColor(red: 0.08, green: 0.08, blue: 0.10, alpha: 0.93).cgColor)
-        ctx.addPath(CGPath(roundedRect: pillRect, cornerWidth: cornerRadius,
-                           cornerHeight: cornerRadius, transform: nil))
+        for i in 0..<5 {
+            let x = startX + CGFloat(i) * (barW + barGap)
+            let h = max(minBarH, bounds.height * smoothed[i])
+            let y = (bounds.height - h) / 2
+            let rect = CGRect(x: x, y: y, width: barW, height: h)
+            ctx.addPath(CGPath(roundedRect: rect, cornerWidth: barRadius, cornerHeight: barRadius, transform: nil))
+        }
         ctx.fillPath()
-
-        switch status {
-        case .listening:
-            drawSiriWave(in: pillRect, ctx: ctx, alpha: 1.0)
-        case .processing:
-            drawSiriWave(in: pillRect, ctx: ctx, alpha: 0.45)
-        case .polishing:
-            drawText(in: pillRect, alpha: 0.5)
-        case .done:
-            drawText(in: pillRect, alpha: 0.95)
-        case .connecting:
-            drawConnecting(in: pillRect, ctx: ctx)
-        default:
-            break
-        }
-    }
-
-    // MARK: - Siri-style wave
-
-    private func drawSiriWave(in rect: CGRect, ctx: CGContext, alpha: CGFloat) {
-        let clipRect = rect.insetBy(dx: 0, dy: 2)
-        ctx.saveGState()
-        ctx.addPath(CGPath(roundedRect: clipRect, cornerWidth: cornerRadius,
-                           cornerHeight: cornerRadius, transform: nil))
-        ctx.clip()
-
-        let path = wavePath(in: rect)
-
-        // Wide diffuse glow — simulates light radiating from within the dark surface
-        ctx.setStrokeColor(NSColor(red: 0.50, green: 0.75, blue: 1.0, alpha: 0.12 * alpha).cgColor)
-        ctx.setLineWidth(10)
-        ctx.setLineCap(.round)
-        ctx.addPath(path)
-        ctx.strokePath()
-
-        // Mid layer
-        ctx.setStrokeColor(NSColor(red: 0.65, green: 0.85, blue: 1.0, alpha: 0.28 * alpha).cgColor)
-        ctx.setLineWidth(3)
-        ctx.addPath(path)
-        ctx.strokePath()
-
-        // Core — semi-transparent blue-white, not solid white
-        ctx.setStrokeColor(NSColor(red: 0.80, green: 0.92, blue: 1.0, alpha: 0.62 * alpha).cgColor)
-        ctx.setLineWidth(1.5)
-        ctx.addPath(path)
-        ctx.strokePath()
-
-        ctx.restoreGState()
-    }
-
-    /// Smooth bezier path for the wave.
-    /// Uses two overlapping sine harmonics so the shape feels organic rather than mechanically periodic.
-    private func wavePath(in rect: CGRect) -> CGPath {
-        let N      = 80
-        let cy     = rect.midY
-        let maxAmp = rect.height * 0.26 * smoothAmp
-
-        var pts = [CGPoint]()
-        pts.reserveCapacity(N + 1)
-
-        for i in 0...N {
-            let t  = Double(i) / Double(N)
-            let x  = rect.minX + CGFloat(t) * rect.width
-
-            // Primary wave + subtle second harmonic for organic feel
-            let θ1 = t * .pi * 2.6 + phase
-            let θ2 = t * .pi * 5.2 + phase * 1.7 + 1.0
-            let y  = cy - maxAmp * (CGFloat(sin(θ1)) * 0.80 + CGFloat(sin(θ2)) * 0.20)
-
-            pts.append(CGPoint(x: x, y: y))
-        }
-
-        // Cardinal-spline via midpoint quadratic bezier
-        let path = CGMutablePath()
-        path.move(to: pts[0])
-        for i in 1..<pts.count - 1 {
-            let mid = CGPoint(x: (pts[i].x + pts[i+1].x) * 0.5,
-                              y: (pts[i].y + pts[i+1].y) * 0.5)
-            path.addQuadCurve(to: mid, control: pts[i])
-        }
-        path.addLine(to: pts[pts.count - 1])
-        return path
-    }
-
-    // MARK: - Other states
-
-    private func drawText(in rect: CGRect, alpha: CGFloat) {
-        let attrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: 14, weight: .medium),
-            .foregroundColor: NSColor(white: 1.0, alpha: alpha)
-        ]
-        let str = NSAttributedString(string: text, attributes: attrs)
-        let sz  = str.size()
-        let maxW = rect.width - 24
-        str.draw(in: CGRect(
-            x: rect.midX - min(sz.width, maxW) / 2,
-            y: rect.midY - sz.height / 2,
-            width: min(sz.width, maxW),
-            height: sz.height
-        ))
-    }
-
-    private func drawConnecting(in rect: CGRect, ctx: CGContext) {
-        let dotR: CGFloat    = 3.5
-        let spacing: CGFloat = 11
-        let startX = rect.midX - spacing
-        ctx.setFillColor(NSColor(white: 1.0, alpha: 0.5).cgColor)
-        for i in 0..<3 {
-            ctx.fillEllipse(in: CGRect(
-                x: startX + CGFloat(i) * spacing - dotR,
-                y: rect.midY - dotR,
-                width: dotR * 2, height: dotR * 2
-            ))
-        }
     }
 }
