@@ -1,216 +1,135 @@
 import Foundation
 import CSherpaOnnx
 
-/// Local streaming ASR using sherpa-onnx.
-/// The recognizer (model) is loaded once and reused across sessions.
-/// Each PTT session creates a lightweight stream owned by its decode thread.
+/// Local offline ASR using sherpa-onnx SenseVoice.
+/// The recognizer (model) is loaded once at startup and reused across sessions.
+/// Audio is accumulated during a PTT session, then decoded in one shot on release.
 public class SherpaRecognizer: @unchecked Sendable {
     public var onStatus: ((ASRStatus) -> Void)?
     public var onResult: ((ASRResult) -> Void)?
-    public var onError:  ((Error) -> Void)?
 
     private let recognizer: OpaquePointer
-    private var punctuation: OpaquePointer?
     private let lock = NSLock()
 
-    // Current session — protected by lock
-    private var activeStream: OpaquePointer?
-    private var generation: Int = 0
-    private var inputEnded = false
+    // Accumulated Float32 audio for the current session
+    private var audioBuffer: [Float] = []
+    private var sessionActive = false
 
     public init?(modelDir: String, numThreads: Int = 2) {
-        let encoderPath = (modelDir as NSString).appendingPathComponent("encoder.int8.onnx")
-        let decoderPath = (modelDir as NSString).appendingPathComponent("decoder.int8.onnx")
-        let tokensPath  = (modelDir as NSString).appendingPathComponent("tokens.txt")
+        let modelPath = (modelDir as NSString).appendingPathComponent("model.int8.onnx")
+        let tokensPath = (modelDir as NSString).appendingPathComponent("tokens.txt")
 
-        guard FileManager.default.fileExists(atPath: encoderPath) else {
-            fputs("[SherpaRecognizer] encoder not found: \(encoderPath)\n", stderr)
+        guard FileManager.default.fileExists(atPath: modelPath) else {
+            fputs("[SherpaRecognizer] model not found: \(modelPath)\n", stderr)
             return nil
         }
 
-        var config = SherpaOnnxOnlineRecognizerConfig(
-            feat_config: SherpaOnnxFeatureConfig(sample_rate: 16000, feature_dim: 80),
-            model_config: SherpaOnnxOnlineModelConfig(
-                transducer: SherpaOnnxOnlineTransducerModelConfig(
-                    encoder: strdup(""), decoder: strdup(""), joiner: strdup("")
-                ),
-                paraformer: SherpaOnnxOnlineParaformerModelConfig(
-                    encoder: strdup(encoderPath), decoder: strdup(decoderPath)
-                ),
-                zipformer2_ctc: SherpaOnnxOnlineZipformer2CtcModelConfig(model: strdup("")),
-                tokens: strdup(tokensPath),
-                num_threads: Int32(numThreads),
-                provider: strdup("cpu"),
-                debug: 0,
-                model_type: strdup("paraformer"),
-                modeling_unit: strdup("cjkchar"),
-                bpe_vocab: strdup(""),
-                tokens_buf: strdup(""),
-                tokens_buf_size: 0,
-                nemo_ctc: SherpaOnnxOnlineNemoCtcModelConfig(model: strdup("")),
-                t_one_ctc: SherpaOnnxOnlineToneCtcModelConfig(model: strdup(""))
-            ),
-            decoding_method: strdup("greedy_search"),
-            max_active_paths: 4,
-            enable_endpoint: 0,
-            rule1_min_trailing_silence: 2.4,
-            rule2_min_trailing_silence: 0.8,
-            rule3_min_utterance_length: 30,
-            hotwords_file: strdup(""),
-            hotwords_score: 1.5,
-            ctc_fst_decoder_config: SherpaOnnxOnlineCtcFstDecoderConfig(
-                graph: strdup(""), max_active: 3000
-            ),
-            rule_fsts: strdup(""),
-            rule_fars: strdup(""),
-            blank_penalty: 0.0,
-            hotwords_buf: strdup(""),
-            hotwords_buf_size: 0,
-            hr: SherpaOnnxHomophoneReplacerConfig(
-                dict_dir: strdup(""), lexicon: strdup(""), rule_fsts: strdup("")
-            )
-        )
+        var config = SherpaOnnxOfflineRecognizerConfig()
+        memset(&config, 0, MemoryLayout<SherpaOnnxOfflineRecognizerConfig>.size)
 
-        guard let rec = SherpaOnnxCreateOnlineRecognizer(&config) else {
-            fputs("[SherpaRecognizer] failed to create recognizer\n", stderr)
+        config.feat_config.sample_rate = 16000
+        config.feat_config.feature_dim = 80
+        config.model_config.sense_voice.model = UnsafePointer(strdup(modelPath))
+        config.model_config.sense_voice.language = UnsafePointer(strdup("auto"))
+        config.model_config.sense_voice.use_itn = 1
+        config.model_config.tokens = UnsafePointer(strdup(tokensPath))
+        config.model_config.num_threads = Int32(numThreads)
+        config.model_config.provider = UnsafePointer(strdup("cpu"))
+        config.model_config.debug = 0
+        config.decoding_method = UnsafePointer(strdup("greedy_search"))
+
+        guard let rec = SherpaOnnxCreateOfflineRecognizer(&config) else {
+            fputs("[SherpaRecognizer] failed to create offline recognizer\n", stderr)
             return nil
         }
         self.recognizer = rec
-        fputs("[SherpaRecognizer] model loaded from \(modelDir)\n", stderr)
-
-        let punctDir = ((modelDir as NSString).deletingLastPathComponent as NSString)
-            .appendingPathComponent("punct-ct-transformer-zh-en")
-        let punctModel = (punctDir as NSString).appendingPathComponent("model.onnx")
-        if FileManager.default.fileExists(atPath: punctModel) {
-            var punctConfig = SherpaOnnxOfflinePunctuationConfig(
-                model: SherpaOnnxOfflinePunctuationModelConfig(
-                    ct_transformer: strdup(punctModel),
-                    num_threads: Int32(numThreads),
-                    debug: 0,
-                    provider: strdup("cpu")
-                )
-            )
-            self.punctuation = SherpaOnnxCreateOfflinePunctuation(&punctConfig)
-            fputs("[SherpaRecognizer] punctuation model loaded\n", stderr)
-        }
+        fputs("[SherpaRecognizer] SenseVoice model loaded from \(modelDir)\n", stderr)
     }
 
     deinit {
-        lock.lock()
-        if let s = activeStream { SherpaOnnxDestroyOnlineStream(s) }
-        activeStream = nil
-        lock.unlock()
-        if let p = punctuation { SherpaOnnxDestroyOfflinePunctuation(p) }
-        SherpaOnnxDestroyOnlineRecognizer(recognizer)
+        SherpaOnnxDestroyOfflineRecognizer(recognizer)
     }
 
-    /// Start a new recognition session.
+    /// Start a new recognition session (just resets the audio buffer).
     public func startSession() {
         lock.lock()
-        generation += 1
-        let myGen = generation
-        // Don't destroy old stream here — old decode thread still owns it
-        // Just detach it so sendAudio goes to the new stream
-        let newStream = SherpaOnnxCreateOnlineStream(recognizer)!
-        activeStream = newStream
-        inputEnded = false
+        audioBuffer.removeAll(keepingCapacity: true)
+        sessionActive = true
         lock.unlock()
-
-        fputs("[SherpaRecognizer] session \(myGen) started\n", stderr)
+        fputs("[SherpaRecognizer] session started\n", stderr)
         onStatus?(.listening)
-
-        // Decode thread owns `newStream` — it will destroy it when done
-        let thread = Thread { [weak self] in
-            self?.decodeLoop(gen: myGen, stream: newStream)
-        }
-        thread.name = "sherpa-decode"
-        thread.qualityOfService = .userInteractive
-        thread.start()
     }
 
-    /// Feed raw Int16 PCM audio (16kHz mono).
+    /// Feed raw Int16 PCM audio (16kHz mono). Accumulated for offline decode.
     public func sendAudio(_ data: Data) {
         let floats = int16ToFloat(data)
         lock.lock()
-        guard let s = activeStream else { lock.unlock(); return }
-        SherpaOnnxOnlineStreamAcceptWaveform(s, 16000, floats, Int32(floats.count))
+        audioBuffer.append(contentsOf: floats)
         lock.unlock()
     }
 
-    /// Signal end of audio.
+    /// Signal end of audio — runs offline decode and emits final result.
     public func finishAudio() {
         lock.lock()
-        guard let s = activeStream else { lock.unlock(); return }
-        // 1s silence tail — gives the model time to finalize the last token
-        let tail = [Float](repeating: 0.0, count: 16000)
-        SherpaOnnxOnlineStreamAcceptWaveform(s, 16000, tail, Int32(tail.count))
-        SherpaOnnxOnlineStreamInputFinished(s)
-        inputEnded = true
+        guard sessionActive else { lock.unlock(); return }
+        sessionActive = false
+        let samples = audioBuffer
+        audioBuffer.removeAll(keepingCapacity: true)
         lock.unlock()
+
         onStatus?(.processing)
+
+        guard !samples.isEmpty else {
+            fputs("[SherpaRecognizer] finishAudio: empty audio\n", stderr)
+            onResult?(ASRResult(text: "", isFinal: true))
+            return
+        }
+
+        // Skip recognition if audio is too quiet (silence/noise → hallucination)
+        let sumSq = samples.reduce(0.0) { $0 + Double($1) * Double($1) }
+        let rms = Float(sqrt(sumSq / Double(samples.count)))
+        if rms < 0.005 {
+            fputs("[SherpaRecognizer] finishAudio: audio too quiet (rms=\(String(format: "%.4f", rms))), skipping\n", stderr)
+            onResult?(ASRResult(text: "", isFinal: true))
+            return
+        }
+
+        let duration = Double(samples.count) / 16000.0
+        fputs("[SherpaRecognizer] decoding \(String(format: "%.1f", duration))s audio...\n", stderr)
+
+        // Run offline decode on a background thread to avoid blocking the caller
+        let rec = recognizer
+        let onResult = onResult
+        let onStatus = onStatus
+        Thread.detachNewThread {
+            let stream = SherpaOnnxCreateOfflineStream(rec)!
+            defer { SherpaOnnxDestroyOfflineStream(stream) }
+
+            samples.withUnsafeBufferPointer { buf in
+                SherpaOnnxAcceptWaveformOffline(stream, 16000, buf.baseAddress, Int32(buf.count))
+            }
+            SherpaOnnxDecodeOfflineStream(rec, stream)
+
+            let resultPtr = SherpaOnnxGetOfflineStreamResult(stream)
+            let text = resultPtr?.pointee.text.map { String(cString: $0) } ?? ""
+            if let r = resultPtr { SherpaOnnxDestroyOfflineRecognizerResult(r) }
+
+            fputs("[SherpaRecognizer] result: \(text)\n", stderr)
+            onResult?(ASRResult(text: text, isFinal: true))
+            onStatus?(.done)
+        }
     }
 
-    /// Stop the current session without waiting for result.
+    /// Stop the current session without decoding.
     public func stopSession() {
         lock.lock()
-        generation += 1
-        activeStream = nil  // detach — decode thread will clean up its own stream
-        inputEnded = false
+        sessionActive = false
+        audioBuffer.removeAll(keepingCapacity: true)
         lock.unlock()
         onStatus?(.idle)
     }
 
     // MARK: - Private
-
-    /// Decode loop — owns and destroys `stream` when done.
-    private func decodeLoop(gen: Int, stream: OpaquePointer) {
-        defer { SherpaOnnxDestroyOnlineStream(stream) }
-        var lastText = ""
-
-        while true {
-            // Check if this session is still active
-            lock.lock()
-            let stillActive = (generation == gen)
-            let ended = inputEnded
-            lock.unlock()
-
-            guard stillActive else { return }
-
-            // Decode available frames (no lock needed — only this thread decodes this stream)
-            var decoded = false
-            while SherpaOnnxIsOnlineStreamReady(recognizer, stream) != 0 {
-                SherpaOnnxDecodeOnlineStream(recognizer, stream)
-                decoded = true
-            }
-
-            // Emit partial result
-            if let resultPtr = SherpaOnnxGetOnlineStreamResult(recognizer, stream) {
-                let text = resultPtr.pointee.text.map { String(cString: $0) } ?? ""
-                SherpaOnnxDestroyOnlineRecognizerResult(resultPtr)
-                if text != lastText {
-                    lastText = text
-                    onResult?(ASRResult(text: text, isFinal: false))
-                }
-            }
-
-            // Input finished + nothing left to decode → emit final
-            if ended && !decoded {
-                if let resultPtr = SherpaOnnxGetOnlineStreamResult(recognizer, stream) {
-                    let rawText = resultPtr.pointee.text.map { String(cString: $0) } ?? ""
-                    SherpaOnnxDestroyOnlineRecognizerResult(resultPtr)
-                    let text = addPunctuation(rawText)
-                    fputs("[SherpaRecognizer] session \(gen) final: \(text)\n", stderr)
-                    onResult?(ASRResult(text: text, isFinal: true))
-                }
-                onStatus?(.done)
-                return
-            }
-
-            if !decoded {
-                Thread.sleep(forTimeInterval: 0.01)
-            }
-        }
-    }
 
     private func int16ToFloat(_ data: Data) -> [Float] {
         let count = data.count / 2
@@ -219,15 +138,5 @@ public class SherpaRecognizer: @unchecked Sendable {
             let samples = raw.bindMemory(to: Int16.self)
             return (0..<count).map { Float(samples[$0]) / 32768.0 }
         }
-    }
-
-    private func addPunctuation(_ text: String) -> String {
-        guard let p = punctuation, !text.isEmpty else { return text }
-        guard let cResult = SherpaOfflinePunctuationAddPunct(p, (text as NSString).utf8String) else {
-            return text
-        }
-        let result = String(cString: cResult)
-        SherpaOfflinePunctuationFreeText(cResult)
-        return result
     }
 }

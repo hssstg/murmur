@@ -13,7 +13,6 @@ public class PushToTalk {
 
     private var config: AppConfig
     private var recognizer: SherpaRecognizer?
-    private var latestResult: ASRResult?
     private var idleTimer: Task<Void, Never>?
     private var peakRms: Float = 0
     private var sessionGeneration: Int = 0
@@ -63,29 +62,44 @@ public class PushToTalk {
 
         audioLevels = Array(repeating: 0, count: 16)
         peakRms = 0
-        latestResult = nil
         currentText = ""
         audioBuffer = Data()
 
+        // SenseVoice fires onResult once with the final result after finishAudio
         rec.onResult = { [weak self] result in
             Task { @MainActor [weak self] in
-                self?.latestResult = result
-                self?.currentText = result.text
-                self?.onTextChange?(result.text)
+                guard let self, self.sessionGeneration == myGeneration else { return }
+                self.currentText = result.text
+                self.onTextChange?(result.text)
+
+                var textToInsert = result.text
+                if !textToInsert.isEmpty {
+                    let cfg = self.config
+                    if cfg.llm_enabled && !cfg.llm_base_url.isEmpty {
+                        guard self.sessionGeneration == myGeneration else { return }
+                        self.setStatus(.polishing)
+                        textToInsert = await LLMClient.polish(text: textToInsert, config: cfg)
+                    }
+                    guard self.sessionGeneration == myGeneration else { return }
+                    await TextInserter.insert(textToInsert)
+                }
+
+                guard self.sessionGeneration == myGeneration else { return }
+                if textToInsert.isEmpty {
+                    self.currentText = ""
+                    self.setStatus(.idle)
+                    fputs("[PTT] session \(myGeneration) done (empty)\n", stderr)
+                } else {
+                    self.setStatus(.done)
+                    self.scheduleIdleReset(after: 0.8)
+                    fputs("[PTT] session \(myGeneration) done: \(textToInsert)\n", stderr)
+                }
             }
         }
         rec.onStatus = { [weak self] s in
             Task { @MainActor [weak self] in
-                if s == .listening || s == .processing || s == .done {
-                    self?.setStatus(s)
-                }
-            }
-        }
-        rec.onError = { [weak self] _ in
-            Task { @MainActor [weak self] in
                 guard let self, self.sessionGeneration == myGeneration else { return }
-                self.isSessionActive = false
-                self.setStatus(.idle)
+                self.setStatus(s)
             }
         }
 
@@ -99,9 +113,8 @@ public class PushToTalk {
             fputs("[PTT] handleStop skipped — no active session\n", stderr)
             return
         }
-        let myGeneration = sessionGeneration
         isSessionActive = false
-        fputs("[PTT] session \(myGeneration) stopping\n", stderr)
+        fputs("[PTT] session \(sessionGeneration) stopping\n", stderr)
 
         // Save audio to WAV for benchmark (skip if < 0.5s)
         let savedAudio = audioBuffer
@@ -110,50 +123,14 @@ public class PushToTalk {
             Task.detached { Self.saveWav(pcm: savedAudio) }
         }
 
-        guard let rec = recognizer else {
+        guard recognizer != nil else {
             setStatus(.idle)
             return
         }
 
         setStatus(.processing)
-        fputs("[PTT] session \(myGeneration) calling finishAudio\n", stderr)
-        rec.finishAudio()
-
-        Task { @MainActor [weak self] in
-            guard let self = self else { return }
-            guard self.sessionGeneration == myGeneration else {
-                fputs("[PTT] session \(myGeneration) generation mismatch, bailing\n", stderr)
-                rec.stopSession()
-                return
-            }
-            fputs("[PTT] session \(myGeneration) waiting for final result...\n", stderr)
-            let finalResult = await self.waitForFinalResult(recognizer: rec, timeout: 3.0)
-            fputs("[PTT] session \(myGeneration) got result: \(finalResult?.text ?? "(nil)")\n", stderr)
-
-            let cfg = self.config
-            var textToInsert = finalResult?.text ?? ""
-
-            if !textToInsert.isEmpty {
-                if cfg.llm_enabled && !cfg.llm_base_url.isEmpty {
-                    guard self.sessionGeneration == myGeneration else { return }
-                    self.setStatus(.polishing)
-                    textToInsert = await LLMClient.polish(text: textToInsert, config: cfg)
-                }
-                guard self.sessionGeneration == myGeneration else { return }
-                await TextInserter.insert(textToInsert)
-            }
-
-            guard self.sessionGeneration == myGeneration else { return }
-            if textToInsert.isEmpty {
-                self.currentText = ""
-                self.setStatus(.idle)
-                fputs("[PTT] session \(myGeneration) done (empty)\n", stderr)
-            } else {
-                self.setStatus(.done)
-                self.scheduleIdleReset(after: 0.8)
-                fputs("[PTT] session \(myGeneration) done: \(textToInsert)\n", stderr)
-            }
-        }
+        recognizer!.finishAudio()
+        // Result arrives via onResult callback set in handleStart
     }
 
     public func handleAudioChunk(_ data: Data) {
@@ -191,63 +168,25 @@ public class PushToTalk {
         }
     }
 
-    private func waitForFinalResult(recognizer rec: SherpaRecognizer, timeout: Double) async -> ASRResult? {
-        await withCheckedContinuation { cont in
-            nonisolated(unsafe) var resolved = false
-            let lock = NSLock()
-
-            func resolve(_ r: ASRResult?) {
-                lock.lock(); defer { lock.unlock() }
-                guard !resolved else { return }
-                resolved = true
-                cont.resume(returning: r)
-            }
-
-            let capturedLatest = latestResult
-
-            rec.onResult = { [weak self] r in
-                Task { @MainActor [weak self] in
-                    self?.latestResult = r
-                    self?.currentText = r.text
-                    self?.onTextChange?(r.text)
-                }
-                if r.isFinal { resolve(r) }
-            }
-            rec.onStatus = { [weak self] s in
-                if s == .done || s == .idle {
-                    Task { @MainActor [weak self] in
-                        let latest = self?.latestResult ?? capturedLatest
-                        resolve(latest)
-                    }
-                }
-            }
-
-            Task { @MainActor [weak self] in
-                try? await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
-                resolve(self?.latestResult ?? capturedLatest)
-            }
-        }
-    }
-
     /// Returns the path to the model directory bundled with the app.
     nonisolated private static func modelDirectory() -> String {
         // Release .app bundle: Contents/Resources/models/
         if let resourcePath = Bundle.main.resourcePath {
-            let bundled = (resourcePath as NSString).appendingPathComponent("models/streaming-paraformer-zh-en")
-            if FileManager.default.fileExists(atPath: (bundled as NSString).appendingPathComponent("encoder.int8.onnx")) {
+            let bundled = (resourcePath as NSString).appendingPathComponent("models/sense-voice-zh-en")
+            if FileManager.default.fileExists(atPath: (bundled as NSString).appendingPathComponent("model.int8.onnx")) {
                 return bundled
             }
         }
 
         // Development fallback: models/ in the repo root
         let cwd = FileManager.default.currentDirectoryPath as NSString
-        let devPath = cwd.appendingPathComponent("models/streaming-paraformer-zh-en")
-        if FileManager.default.fileExists(atPath: (devPath as NSString).appendingPathComponent("encoder.int8.onnx")) {
+        let devPath = cwd.appendingPathComponent("models/sense-voice-zh-en")
+        if FileManager.default.fileExists(atPath: (devPath as NSString).appendingPathComponent("model.int8.onnx")) {
             return devPath
         }
 
         // Last resort
-        return "/Users/locke/workspace/murmur/models/streaming-paraformer-zh-en"
+        return "/Users/locke/workspace/murmur/models/sense-voice-zh-en"
     }
 
     /// Save raw PCM (16kHz mono Int16) as WAV to ~/Library/Application Support/com.locke.murmur/recordings/
