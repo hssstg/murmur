@@ -1,0 +1,40 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Environment variables (contains secrets)
+.env
+
+# Git worktrees
+.worktrees/
+
+# ASR model files (large, download separately)
+models/**/*.onnx
+
+# sherpa-onnx local package binaries
+src-swift/LocalPackages/SherpaOnnx/sherpa-onnx.xcframework/
+src-swift/LocalPackages/SherpaOnnx/libs/
+
+# Implementation plans (contain personal paths and work logs)
+docs/plans/

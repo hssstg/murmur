@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Changelog — Murmur</title>
+  <meta name="description" content="Murmur release history and changelog.">
+  <link rel="canonical" href="https://murmurtype.com/changelog">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --white:  #ffffff;
+      --off:    #fafaf8;
+      --ink:    #111111;
+      --ink-2:  #555555;
+      --ink-3:  #999999;
+      --line:   #e8e8e4;
+      --accent: #b07848;
+      --sans:   -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--white);
+      color: var(--ink);
+      font-family: var(--sans);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── NAV ─────────────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 48px;
+      background: rgba(255,255,255,0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav-logo {
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+      align-items: center;
+    }
+
+    .nav-links a {
+      font-size: 13px;
+      color: var(--ink-2);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .nav-links a:hover { color: var(--ink); }
+
+    .nav-dl {
+      background: var(--ink) !important;
+      color: var(--white) !important;
+      padding: 7px 16px;
+      border-radius: 6px;
+      font-weight: 500 !important;
+    }
+
+    .nav-dl:hover { background: #2a2a2a !important; }
+
+    /* ─── PAGE ─────────────────────────────────────────────── */
+    .page {
+      padding: 120px 48px 100px;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .page-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 24px;
+    }
+
+    .page-eyebrow::before {
+      content: '';
+      display: block;
+      width: 20px; height: 1px;
+      background: var(--accent);
+    }
+
+    .page-title {
+      font-size: clamp(40px, 6vw, 64px);
+      font-weight: 200;
+      line-height: 1.08;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+      margin-bottom: 64px;
+    }
+
+    /* ─── RELEASES ─────────────────────────────────────────── */
+    .releases { display: flex; flex-direction: column; gap: 0; }
+
+    .release {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 0 40px;
+      padding: 40px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .release:last-child { border-bottom: 1px solid var(--line); }
+
+    .release-meta {
+      padding-top: 4px;
+    }
+
+    .release-version {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+      margin-bottom: 6px;
+    }
+
+    .release-version.unreleased {
+      color: var(--accent);
+    }
+
+    .release-date {
+      font-size: 12px;
+      color: var(--ink-3);
+      letter-spacing: 0.02em;
+    }
+
+    .release-body {}
+
+    .release-summary {
+      font-size: 15px;
+      font-weight: 400;
+      color: var(--ink-2);
+      line-height: 1.65;
+      margin-bottom: 20px;
+    }
+
+    .release-section {
+      margin-bottom: 16px;
+    }
+
+    .release-section-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      margin-bottom: 10px;
+    }
+
+    .release-items {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .release-items li {
+      font-size: 14px;
+      color: var(--ink-2);
+      line-height: 1.55;
+      display: flex;
+      gap: 10px;
+    }
+
+    .release-items li::before {
+      content: '—';
+      color: var(--line);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* ─── FOOTER ──────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 32px 48px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    footer p {
+      font-size: 12px;
+      color: var(--ink-3);
+    }
+
+    footer a {
+      color: var(--ink-3);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    footer a:hover { color: var(--ink); }
+
+    @media (max-width: 640px) {
+      nav { padding: 0 20px; }
+      .nav-links { gap: 16px; }
+      .page { padding: 100px 20px 64px; }
+      .release { grid-template-columns: 1fr; gap: 12px 0; }
+      .release-meta { padding-top: 0; }
+      footer { padding: 24px 20px; flex-direction: column; gap: 8px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/">Murmur</a>
+  <ul class="nav-links">
+    <li><a href="/">Home</a></li>
+    <li><a href="/changelog" style="color: var(--ink); font-weight: 500;">Changelog</a></li>
+    <li><a href="/murmur-latest.dmg" class="nav-dl">Download</a></li>
+  </ul>
+</nav>
+
+<main class="page">
+  <div class="page-eyebrow">Release Notes</div>
+  <h1 class="page-title">Changelog</h1>
+
+  <div class="releases">
+
+    <!-- Unreleased -->
+    <div class="release">
+      <div class="release-meta">
+        <div class="release-version unreleased">Coming soon</div>
+        <div class="release-date">In progress</div>
+      </div>
+      <div class="release-body">
+        <div class="release-section">
+          <ul class="release-items">
+            <li>AI suggests words to add to your vocabulary based on what you say and correct</li>
+            <li>Usage dashboard — see how much you've dictated over the past 30 days</li>
+            <li>Edit past transcriptions and keep both the original and your correction</li>
+            <li>Smooth waveform animation while listening</li>
+            <li>Vocabulary syncs automatically when you open the hotword window</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- 0.2.0 -->
+    <div class="release">
+      <div class="release-meta">
+        <div class="release-version">v0.2.0</div>
+        <div class="release-date">March 3, 2026</div>
+      </div>
+      <div class="release-body">
+        <p class="release-summary">Rebuilt from scratch as a lightweight native Mac app. Faster, smaller, and works in every app including terminals and code editors.</p>
+        <div class="release-section">
+          <ul class="release-items">
+            <li>Text appears instantly at your cursor — no window switching, no copy-paste</li>
+            <li>Optional AI cleanup to remove filler words and fix mishearing</li>
+            <li>Custom vocabulary to improve accuracy for your own words and names</li>
+            <li>All transcription history saved locally on your Mac</li>
+            <li>Menu bar icon with quick access to history, vocabulary, and settings</li>
+            <li>Remap a mouse button to Enter for quick confirmation</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- 0.1.0 -->
+    <div class="release">
+      <div class="release-meta">
+        <div class="release-version">v0.1.0</div>
+        <div class="release-date">February 24, 2026</div>
+      </div>
+      <div class="release-body">
+        <p class="release-summary">First working version. Proof of concept.</p>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <p>© 2026 Murmur</p>
+  <p><a href="/">Home</a> · <a href="/murmur-latest.dmg">Download</a></p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,7 @@
+module CSherpaOnnx {
+    header "c-api.h"
+    link "sherpa-onnx"
+    link "onnxruntime"
+    link "c++"
+    export *
+}

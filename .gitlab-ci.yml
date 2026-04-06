@@ -1,0 +1,55 @@
+stages:
+  - test
+  - build
+  - deploy
+
+# 需要一台带 macos 标签的 GitLab Runner（192.168.10.28）
+
+test:
+  stage: test
+  tags: [macos]
+  script:
+    - cd src-swift && swift run MurmurTests
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+build-release:
+  stage: build
+  tags: [macos]
+  script:
+    - cd src-swift
+    - swift build -c release
+    - mkdir -p ../dist/murmur.app/Contents/MacOS
+    - mkdir -p ../dist/murmur.app/Contents/Resources
+    - cp .build/release/murmur ../dist/murmur.app/Contents/MacOS/
+    - cp Info.plist ../dist/murmur.app/Contents/
+    - cp murmur.icns ../dist/murmur.app/Contents/Resources/
+    - cp -r Resources/. ../dist/murmur.app/Contents/Resources/
+    - codesign --force -s - --entitlements murmur.entitlements ../dist/murmur.app
+    - cd ../dist && hdiutil create -volname "Murmur" -srcfolder murmur.app -ov -format UDZO murmur-latest.dmg
+  artifacts:
+    name: "murmur-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - dist/
+    expire_in: 30 days
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+deploy-website:
+  stage: deploy
+  tags: [macos]
+  script:
+    # 组装部署目录
+    - mkdir -p deploy-dist
+    - cp -r website/. deploy-dist/
+    - cp CHANGELOG.md LICENSE deploy-dist/
+    - cp dist/murmur-latest.dmg deploy-dist/
+    - VERSION=$(defaults read "$(pwd)/src-swift/Info.plist" CFBundleShortVersionString)
+    - printf '{"version":"%s","date":"%s"}' "$VERSION" "$(date -u +%Y-%m-%d)" > deploy-dist/latest.json
+    # 部署到 Cloudflare Pages
+    - CLOUDFLARE_API_TOKEN=$CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID=$CLOUDFLARE_ACCOUNT_ID
+      npx wrangler pages deploy deploy-dist --project-name murmur --branch main --commit-dirty=true
+  needs: [build-release]
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
