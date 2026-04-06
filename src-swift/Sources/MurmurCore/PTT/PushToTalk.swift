@@ -123,13 +123,13 @@ public class PushToTalk {
             Task.detached { Self.saveWav(pcm: savedAudio) }
         }
 
-        guard recognizer != nil else {
+        guard let rec = recognizer else {
             setStatus(.idle)
             return
         }
 
         setStatus(.processing)
-        recognizer!.finishAudio()
+        rec.finishAudio()
         // Result arrives via onResult callback set in handleStart
     }
 

@@ -11,6 +11,8 @@ public class SherpaRecognizer: @unchecked Sendable {
     private let recognizer: OpaquePointer
     private let lock = NSLock()
 
+    private static let silenceRmsThreshold: Float = 0.005
+
     // Accumulated Float32 audio for the current session
     private var audioBuffer: [Float] = []
     private var sessionActive = false
@@ -57,7 +59,6 @@ public class SherpaRecognizer: @unchecked Sendable {
         sessionActive = true
         lock.unlock()
         fputs("[SherpaRecognizer] session started\n", stderr)
-        onStatus?(.listening)
     }
 
     /// Feed raw Int16 PCM audio (16kHz mono). Accumulated for offline decode.
@@ -69,6 +70,7 @@ public class SherpaRecognizer: @unchecked Sendable {
     }
 
     /// Signal end of audio — runs offline decode and emits final result.
+    /// Callbacks are dispatched back to the main thread to avoid data races.
     public func finishAudio() {
         lock.lock()
         guard sessionActive else { lock.unlock(); return }
@@ -88,7 +90,7 @@ public class SherpaRecognizer: @unchecked Sendable {
         // Skip recognition if audio is too quiet (silence/noise → hallucination)
         let sumSq = samples.reduce(0.0) { $0 + Double($1) * Double($1) }
         let rms = Float(sqrt(sumSq / Double(samples.count)))
-        if rms < 0.005 {
+        if rms < Self.silenceRmsThreshold {
             fputs("[SherpaRecognizer] finishAudio: audio too quiet (rms=\(String(format: "%.4f", rms))), skipping\n", stderr)
             onResult?(ASRResult(text: "", isFinal: true))
             return
@@ -97,12 +99,15 @@ public class SherpaRecognizer: @unchecked Sendable {
         let duration = Double(samples.count) / 16000.0
         fputs("[SherpaRecognizer] decoding \(String(format: "%.1f", duration))s audio...\n", stderr)
 
-        // Run offline decode on a background thread to avoid blocking the caller
+        // Run offline decode on a background thread to avoid blocking the caller.
+        // Dispatch callbacks back to main thread to avoid data races on closure properties.
         let rec = recognizer
-        let onResult = onResult
-        let onStatus = onStatus
-        Thread.detachNewThread {
-            let stream = SherpaOnnxCreateOfflineStream(rec)!
+        Thread.detachNewThread { [weak self] in
+            guard let stream = SherpaOnnxCreateOfflineStream(rec) else {
+                fputs("[SherpaRecognizer] failed to create offline stream\n", stderr)
+                DispatchQueue.main.async { self?.onResult?(ASRResult(text: "", isFinal: true)) }
+                return
+            }
             defer { SherpaOnnxDestroyOfflineStream(stream) }
 
             samples.withUnsafeBufferPointer { buf in
@@ -115,8 +120,10 @@ public class SherpaRecognizer: @unchecked Sendable {
             if let r = resultPtr { SherpaOnnxDestroyOfflineRecognizerResult(r) }
 
             fputs("[SherpaRecognizer] result: \(text)\n", stderr)
-            onResult?(ASRResult(text: text, isFinal: true))
-            onStatus?(.done)
+            DispatchQueue.main.async {
+                self?.onResult?(ASRResult(text: text, isFinal: true))
+                self?.onStatus?(.done)
+            }
         }
     }
 
