@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — Murmur</title>
+  <meta name="description" content="Murmur privacy policy. All voice data stays on your device. No tracking, no analytics, no cloud processing.">
+  <link rel="canonical" href="https://murmurtype.com/privacy">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --ink: #111; --ink-2: #555; --ink-3: #999; --line: #e8e8e4; --sans: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif; }
+    body { background: #fff; color: var(--ink); font-family: var(--sans); line-height: 1.7; -webkit-font-smoothing: antialiased; }
+    .page { max-width: 640px; margin: 0 auto; padding: 100px 24px 80px; }
+    h1 { font-size: 36px; font-weight: 200; letter-spacing: -0.03em; margin-bottom: 12px; }
+    .date { font-size: 13px; color: var(--ink-3); margin-bottom: 48px; }
+    h2 { font-size: 18px; font-weight: 500; margin: 36px 0 12px; }
+    p { font-size: 15px; color: var(--ink-2); margin-bottom: 16px; }
+    a { color: var(--ink); }
+    footer { border-top: 1px solid var(--line); padding: 24px; text-align: center; font-size: 12px; color: var(--ink-3); }
+    footer a { color: var(--ink-3); text-decoration: none; }
+  </style>
+</head>
+<body>
+<main class="page">
+  <h1>Privacy Policy</h1>
+  <p class="date">Last updated: April 9, 2026</p>
+
+  <h2>Summary</h2>
+  <p>Murmur processes all voice data locally on your Mac. No audio or text is sent to any server unless you explicitly configure an LLM endpoint.</p>
+
+  <h2>Data Collection</h2>
+  <p>Murmur does not collect, transmit, or store any personal data on external servers. There are no analytics, no tracking, and no telemetry.</p>
+
+  <h2>Voice Data</h2>
+  <p>All speech recognition is performed offline using the SenseVoice model running on your device. Your voice recordings and transcriptions never leave your Mac.</p>
+
+  <h2>LLM Polish (Optional)</h2>
+  <p>If you enable LLM text polishing, your transcribed text (not audio) is sent to the API endpoint you configure. Murmur does not control or monitor this connection. Choose a provider whose privacy policy you trust.</p>
+
+  <h2>Local Storage</h2>
+  <p>Configuration, dictation history, and hotwords are stored locally at <code>~/Library/Application Support/com.murmurtype/</code>. This data is never transmitted externally.</p>
+
+  <h2>Open Source</h2>
+  <p>Murmur is open source under the MIT license. You can inspect the full source code at <a href="https://github.com/hssstg/murmur">github.com/hssstg/murmur</a> to verify these claims.</p>
+
+  <h2>Contact</h2>
+  <p>Questions about this policy? Open an issue on <a href="https://github.com/hssstg/murmur/issues">GitHub</a>.</p>
+</main>
+<footer>
+  <a href="/">Murmur</a> · <a href="/changelog">Changelog</a> · <a href="https://github.com/hssstg/murmur">GitHub</a>
+</footer>
+</body>
+</html>

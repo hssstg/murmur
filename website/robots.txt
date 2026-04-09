@@ -1,8 +1,8 @@
 User-agent: *
 Allow: /
+
 Sitemap: https://murmurtype.com/sitemap.xml
 
-# Welcome AI crawlers for GEO
 User-agent: GPTBot
 Allow: /
 
@@ -25,4 +25,7 @@ User-agent: Bytespider
 Allow: /
 
 User-agent: CCBot
+Allow: /
+
+User-agent: Amazonbot
 Allow: /

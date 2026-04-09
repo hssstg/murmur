@@ -1,0 +1,28 @@
+# Murmur
+
+> Free, open-source offline voice dictation for macOS.
+
+Murmur is a push-to-talk voice input app for macOS. Hold a hotkey to speak, release to insert text at your cursor. Fully offline speech recognition via SenseVoice. Native Swift app, no Electron.
+
+## Links
+
+- Homepage: https://murmurtype.com
+- GitHub: https://github.com/hssstg/murmur
+- Download: https://github.com/hssstg/murmur/releases/latest
+- Changelog: https://murmurtype.com/changelog
+
+## Features
+
+- Offline ASR: Chinese, English, Japanese, Korean, Cantonese
+- Push-to-talk with customizable hotkeys and mouse buttons
+- Optional LLM text polishing via OpenAI-compatible API
+- Dictation history with search
+- Hotword management with AI extraction
+- Usage statistics dashboard
+- Mouse button remapping (side button as Enter)
+
+## Requirements
+
+- macOS 14 Sonoma or later
+- Apple Silicon or Intel Mac
+- Free, MIT licensed
