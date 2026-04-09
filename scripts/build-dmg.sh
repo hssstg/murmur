@@ -32,7 +32,7 @@ rm -rf "$APP_BUNDLE"
 mkdir -p "$APP_BUNDLE/Contents/MacOS"
 mkdir -p "$APP_BUNDLE/Contents/Resources"
 
-cp "$BINARY"                        "$APP_BUNDLE/Contents/MacOS/$APP_NAME"
+cp "$BINARY"                        "$APP_BUNDLE/Contents/MacOS/murmur"
 cp "$SWIFT_DIR/Info.plist"          "$APP_BUNDLE/Contents/Info.plist"
 cp "$SWIFT_DIR/murmur.icns"         "$APP_BUNDLE/Contents/Resources/murmur.icns"
 
@@ -56,17 +56,38 @@ fi
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $VERSION"            "$APP_BUNDLE/Contents/Info.plist"
 
 # ── 3. Code sign ─────────────────────────────────────────────────────────────
-echo "[3/5] Code signing (ad-hoc)…"
-codesign --force --deep --options runtime --sign "-" "$APP_BUNDLE"
-# Strip quarantine so CGEventTap works without Gatekeeper interference
-xattr -dr com.apple.quarantine "$APP_BUNDLE" 2>/dev/null || true
+SIGN_ID="Developer ID Application: Fertan KANAN (2TK55NZP65)"
+ENTITLEMENTS="$SWIFT_DIR/murmur.entitlements"
+
+echo "[3/7] Code signing…"
+# Sign inside-out: frameworks/bundles first, then the main binary, then the app
+
+# Sign sherpa-onnx framework if present
+SHERPA_FW="$APP_BUNDLE/Contents/Frameworks/sherpa-onnx.framework"
+if [ -d "$SHERPA_FW" ]; then
+    codesign --force --timestamp --options runtime --sign "$SIGN_ID" "$SHERPA_FW"
+fi
+# Sign resource bundle if present
+RES_BUNDLE="$APP_BUNDLE/Contents/MacOS/murmur_murmur.bundle"
+if [ -d "$RES_BUNDLE" ]; then
+    codesign --force --timestamp --options runtime --sign "$SIGN_ID" "$RES_BUNDLE"
+fi
+# Sign the main binary explicitly
+codesign --force --timestamp --options runtime --entitlements "$ENTITLEMENTS" \
+    --sign "$SIGN_ID" "$APP_BUNDLE/Contents/MacOS/murmur"
+# Sign the app bundle
+codesign --force --timestamp --options runtime --entitlements "$ENTITLEMENTS" \
+    --sign "$SIGN_ID" "$APP_BUNDLE"
+
+echo "[4/7] Verifying signature…"
+codesign --verify --deep --verbose=2 "$APP_BUNDLE"
 
 # ── 4. Generate DMG background ────────────────────────────────────────────────
-echo "[4/5] Generating background…"
+echo "[5/7] Generating background…"
 python3 "$SCRIPT_DIR/gen-dmg-background.py" "$BG_IMG"
 
 # ── 5. Create DMG ─────────────────────────────────────────────────────────────
-echo "[5/5] Packaging DMG…"
+echo "[6/7] Packaging DMG…"
 rm -f "$DMG_OUT"
 
 create-dmg \
@@ -83,6 +104,18 @@ create-dmg \
     "$DMG_OUT" \
     "$APP_BUNDLE"
 
+# Sign the DMG itself
+codesign --force --sign "$SIGN_ID" "$DMG_OUT"
+
+# ── 6. Notarize ──────────────────────────────────────────────────────────────
+echo "[7/7] Notarizing…"
+xcrun notarytool submit "$DMG_OUT" \
+    --keychain-profile "murmur-notarize" \
+    --wait
+
+# Staple the notarization ticket to the DMG
+xcrun stapler staple "$DMG_OUT"
+
 echo ""
-echo "✓ Done: $DMG_OUT"
+echo "✓ Done: $DMG_OUT (signed + notarized)"
 ls -lh "$DMG_OUT"
