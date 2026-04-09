@@ -18,14 +18,21 @@
   <meta property="og:image" content="https://murmurtype.com/og.png">
 
   <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Murmur — Free Voice Dictation for Mac">
+  <meta name="twitter:description" content="Free, open-source push-to-talk dictation for macOS. Fully offline. Text appears instantly at your cursor.">
+  <meta name="twitter:image" content="https://murmurtype.com/og.png">
+
   <!-- Favicon -->
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Murmur — Free Voice Dictation for Mac">
-  <meta name="twitter:description" content="Free, open-source push-to-talk dictation for macOS. No subscription. Text appears instantly at your cursor.">
+  <!-- SEO -->
+  <meta name="robots" content="index, follow">
+  <meta name="author" content="Murmur">
+  <link rel="alternate" hreflang="en" href="https://murmurtype.com/">
+  <meta name="theme-color" content="#ffffff">
 
   <!-- JSON-LD Structured Data -->
   <script type="application/ld+json">
@@ -45,6 +52,64 @@
     "downloadUrl": "https://github.com/hssstg/murmur/releases/latest/download/Murmur-2.0.dmg",
     "softwareVersion": "2.0",
     "license": "https://murmurtype.com/LICENSE"
+  }
+  </script>
+
+  <!-- FAQ Schema for SEO + GEO -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is Murmur free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Murmur is completely free and open source under the MIT license. No subscription, no in-app purchases, no usage limits."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does Murmur work offline?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Murmur runs entirely on your Mac using SenseVoice for offline speech recognition. No internet connection is needed. Your voice data never leaves your device."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What languages does Murmur support?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Murmur supports Chinese (Mandarin), English, Japanese, Korean, and Cantonese through the SenseVoice speech recognition model, with built-in punctuation and inverse text normalization."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How does Murmur compare to Typeless?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Murmur is a free, open-source alternative to Typeless. Unlike Typeless which requires a paid subscription and internet connection, Murmur is completely free, works offline, and keeps all voice data on your device. Both support push-to-talk and AI text cleanup."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What macOS version does Murmur require?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Murmur requires macOS 14 Sonoma or later, and works on both Apple Silicon and Intel Macs."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How does push-to-talk voice typing work?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Hold a configurable hotkey (Right Option by default) to start recording. Speak naturally. Release the key and your words are instantly typed at your cursor position in any app — no copy-paste or window switching needed."
+        }
+      }
+    ]
   }
   </script>
 
@@ -693,9 +758,9 @@
           <td class="col-other">Vendor servers</td>
         </tr>
         <tr>
-          <td>Use your own speech service</td>
-          <td class="col-murmur"><span class="check">✓</span></td>
-          <td class="col-other"><span class="cross">✗</span></td>
+          <td>Offline mode</td>
+          <td class="col-murmur"><span class="check">✓ Fully offline</span></td>
+          <td class="col-other"><span class="cross">✗ Requires internet</span></td>
         </tr>
       </tbody>
     </table>

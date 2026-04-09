@@ -4,11 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Changelog — Murmur</title>
-  <meta name="description" content="Murmur release history and changelog.">
+  <meta name="description" content="Murmur release history and changelog. Track new features, improvements, and bug fixes.">
   <link rel="canonical" href="https://murmurtype.com/changelog">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <meta name="robots" content="index, follow">
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -144,10 +145,6 @@
       margin-bottom: 6px;
     }
 
-    .release-version.unreleased {
-      color: var(--accent);
-    }
-
     .release-date {
       font-size: 12px;
       color: var(--ink-3);
@@ -166,15 +163,6 @@
 
     .release-section {
       margin-bottom: 16px;
-    }
-
-    .release-section-label {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--ink-3);
-      margin-bottom: 10px;
     }
 
     .release-items {
@@ -238,7 +226,8 @@
   <ul class="nav-links">
     <li><a href="/">Home</a></li>
     <li><a href="/changelog" style="color: var(--ink); font-weight: 500;">Changelog</a></li>
-    <li><a href="/murmur-latest.dmg" class="nav-dl">Download</a></li>
+    <li><a href="https://github.com/hssstg/murmur">GitHub</a></li>
+    <li><a href="https://github.com/hssstg/murmur/releases/latest/download/Murmur-2.0.dmg" class="nav-dl">Download</a></li>
   </ul>
 </nav>
 
@@ -248,20 +237,24 @@
 
   <div class="releases">
 
-    <!-- Unreleased -->
+    <!-- 2.0 -->
     <div class="release">
       <div class="release-meta">
-        <div class="release-version unreleased">Coming soon</div>
-        <div class="release-date">In progress</div>
+        <div class="release-version">v2.0</div>
+        <div class="release-date">April 9, 2026</div>
       </div>
       <div class="release-body">
+        <p class="release-summary">Fully offline. Rebuilt speech recognition with SenseVoice — no cloud, no account, no internet required. First public open-source release.</p>
         <div class="release-section">
           <ul class="release-items">
-            <li>AI suggests words to add to your vocabulary based on what you say and correct</li>
-            <li>Usage dashboard — see how much you've dictated over the past 30 days</li>
-            <li>Edit past transcriptions and keep both the original and your correction</li>
-            <li>Smooth waveform animation while listening</li>
-            <li>Vocabulary syncs automatically when you open the hotword window</li>
+            <li>Offline ASR via SenseVoice — Chinese, English, Japanese, Korean, Cantonese</li>
+            <li>Built-in punctuation and inverse text normalization</li>
+            <li>Capsule floating window with real-time waveform visualization</li>
+            <li>LLM polish with "Refining..." status display</li>
+            <li>Usage statistics dashboard — 30-day charts, hourly distribution, recognition quality</li>
+            <li>AI hotword extraction from dictation history</li>
+            <li>Developer ID signed for Gatekeeper compatibility</li>
+            <li>Open sourced under MIT license on GitHub</li>
           </ul>
         </div>
       </div>
@@ -304,7 +297,7 @@
 
 <footer>
   <p>© 2026 Murmur</p>
-  <p><a href="/">Home</a> · <a href="/murmur-latest.dmg">Download</a></p>
+  <p><a href="/">Home</a> · <a href="https://github.com/hssstg/murmur">GitHub</a> · <a href="https://github.com/hssstg/murmur/releases/latest/download/Murmur-2.0.dmg">Download</a></p>
 </footer>
 
 </body>
